@@ -21,6 +21,15 @@ export const defaultSettings: Settings = {
 let cache: Settings | null = null;
 const listeners = new Set<(s: Settings) => void>();
 
+/** Running against a local cluster: authorisation is skipped entirely. */
+export function isLocalhost() {
+  if (typeof window === "undefined") return false;
+  const h = window.location.hostname;
+  return h === "localhost" || h === "127.0.0.1" || h === "[::1]" || h.endsWith(".local");
+}
+
+export const LOCAL_TOKEN = "localhost-no-auth";
+
 export function getSettings(): Settings {
   if (cache) return cache;
   if (typeof window === "undefined") return defaultSettings;
@@ -30,8 +39,10 @@ export function getSettings(): Settings {
   } catch {
     cache = defaultSettings;
   }
+  if (!cache.token && isLocalhost()) cache = { ...cache, token: LOCAL_TOKEN };
   return cache;
 }
+
 
 export function setSettings(patch: Partial<Settings>) {
   const next = { ...getSettings(), ...patch };
