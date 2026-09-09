@@ -71,8 +71,11 @@ export function useSettings() {
     setReady(true);
     const l = (n: Settings) => setState({ ...n });
     listeners.add(l);
-    return () => listeners.delete(l);
+    return () => {
+      listeners.delete(l);
+    };
   }, []);
+
 
   const update = useCallback((patch: Partial<Settings>) => setSettings(patch), []);
   return { settings, update, ready };
