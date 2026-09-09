@@ -21,11 +21,18 @@ export const defaultSettings: Settings = {
 let cache: Settings | null = null;
 const listeners = new Set<(s: Settings) => void>();
 
-/** Running against a local cluster: authorisation is skipped entirely. */
+/** Local cluster or Lovable preview: authorisation is skipped entirely. */
 export function isLocalhost() {
   if (typeof window === "undefined") return false;
   const h = window.location.hostname;
-  return h === "localhost" || h === "127.0.0.1" || h === "[::1]" || h.endsWith(".local");
+  return (
+    h === "localhost" ||
+    h === "127.0.0.1" ||
+    h === "[::1]" ||
+    h.endsWith(".local") ||
+    h.endsWith(".lovable.app") ||
+    h.endsWith(".lovableproject.com")
+  );
 }
 
 export const LOCAL_TOKEN = "localhost-no-auth";
