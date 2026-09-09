@@ -3,16 +3,16 @@ export type JobStatus = "PENDING" | "RUNNING" | "COMPLETED" | "FAILED" | "CANCEL
 export interface JobSpec {
   name: string;
   command: string;
-  working_dir?: string;
-  env?: Record<string, string>;
+  working_dir?: string | undefined;
+  env?: Record<string, string> | undefined;
   resources: {
     gpus: number;
     cpus: number;
     memory_gb: number;
   };
   paths: {
-    input?: string;
-    output?: string;
+    input?: string | undefined;
+    output?: string | undefined;
   };
   retry?: {
     max_retries: number;
@@ -24,12 +24,12 @@ export interface JobState {
   job_id: string;
   spec: JobSpec;
   status: JobStatus;
-  node_id?: string;
+  node_id?: string | undefined;
   created_at: string;
-  started_at?: string;
-  completed_at?: string;
-  exit_code?: number;
-  error?: string;
+  started_at?: string | undefined;
+  completed_at?: string | undefined;
+  exit_code?: number | undefined;
+  error?: string | undefined;
   retry_count: number;
 }
 
@@ -42,7 +42,7 @@ export interface NodeSpec {
   os: string;
   status: "ONLINE" | "OFFLINE";
   last_heartbeat: string;
-  current_job_id?: string;
+  current_job_id?: string | undefined;
 }
 
 export interface GPUMetric {
