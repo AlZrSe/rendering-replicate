@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm, useFieldArray } from "react-hook-form";
@@ -13,8 +13,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { createJob } from "@/lib/api";
 import { toYaml } from "@/lib/format";
+import { useProfiles, type SoftwareProfile } from "@/lib/profiles";
 import type { JobSpec } from "@/lib/types";
 
 export const Route = createFileRoute("/jobs/new")({
@@ -32,6 +40,9 @@ export const Route = createFileRoute("/jobs/new")({
         content: "Build a cluster job spec with live YAML preview and validation.",
       },
     ],
+  }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    profile: typeof search.profile === "string" ? search.profile : undefined,
   }),
   component: SubmitJobPage,
 });

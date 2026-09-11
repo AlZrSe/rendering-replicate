@@ -16,6 +16,9 @@ import { Route as JobsJobIdRouteImport } from './routes/jobs.$jobId'
 import { Route as JobsNewRouteImport } from './routes/jobs.new'
 import { Route as NodesIndexRouteImport } from './routes/nodes.index'
 import { Route as NodesNodeIdRouteImport } from './routes/nodes.$nodeId'
+import { Route as ProfilesIndexRouteImport } from './routes/profiles.index'
+import { Route as ProfilesProfileIdRouteImport } from './routes/profiles.$profileId'
+import { Route as ProfilesNewRouteImport } from './routes/profiles.new'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -52,6 +55,21 @@ const NodesNodeIdRoute = NodesNodeIdRouteImport.update({
   path: '/nodes/$nodeId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfilesIndexRoute = ProfilesIndexRouteImport.update({
+  id: '/profiles/',
+  path: '/profiles/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfilesProfileIdRoute = ProfilesProfileIdRouteImport.update({
+  id: '/profiles/$profileId',
+  path: '/profiles/$profileId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfilesNewRoute = ProfilesNewRouteImport.update({
+  id: '/profiles/new',
+  path: '/profiles/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -60,7 +78,10 @@ export interface FileRoutesByFullPath {
   '/jobs/$jobId': typeof JobsJobIdRoute
   '/jobs/new': typeof JobsNewRoute
   '/nodes/$nodeId': typeof NodesNodeIdRoute
+  '/profiles/$profileId': typeof ProfilesProfileIdRoute
+  '/profiles/new': typeof ProfilesNewRoute
   '/nodes/': typeof NodesIndexRoute
+  '/profiles/': typeof ProfilesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -69,7 +90,10 @@ export interface FileRoutesByTo {
   '/jobs/$jobId': typeof JobsJobIdRoute
   '/jobs/new': typeof JobsNewRoute
   '/nodes/$nodeId': typeof NodesNodeIdRoute
+  '/profiles/$profileId': typeof ProfilesProfileIdRoute
+  '/profiles/new': typeof ProfilesNewRoute
   '/nodes': typeof NodesIndexRoute
+  '/profiles': typeof ProfilesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -79,7 +103,10 @@ export interface FileRoutesById {
   '/jobs/$jobId': typeof JobsJobIdRoute
   '/jobs/new': typeof JobsNewRoute
   '/nodes/$nodeId': typeof NodesNodeIdRoute
+  '/profiles/$profileId': typeof ProfilesProfileIdRoute
+  '/profiles/new': typeof ProfilesNewRoute
   '/nodes/': typeof NodesIndexRoute
+  '/profiles/': typeof ProfilesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -90,7 +117,10 @@ export interface FileRouteTypes {
     | '/jobs/$jobId'
     | '/jobs/new'
     | '/nodes/$nodeId'
+    | '/profiles/$profileId'
+    | '/profiles/new'
     | '/nodes/'
+    | '/profiles/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -99,7 +129,10 @@ export interface FileRouteTypes {
     | '/jobs/$jobId'
     | '/jobs/new'
     | '/nodes/$nodeId'
+    | '/profiles/$profileId'
+    | '/profiles/new'
     | '/nodes'
+    | '/profiles'
   id:
     | '__root__'
     | '/'
@@ -108,7 +141,10 @@ export interface FileRouteTypes {
     | '/jobs/$jobId'
     | '/jobs/new'
     | '/nodes/$nodeId'
+    | '/profiles/$profileId'
+    | '/profiles/new'
     | '/nodes/'
+    | '/profiles/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -118,7 +154,10 @@ export interface RootRouteChildren {
   JobsJobIdRoute: typeof JobsJobIdRoute
   JobsNewRoute: typeof JobsNewRoute
   NodesNodeIdRoute: typeof NodesNodeIdRoute
+  ProfilesProfileIdRoute: typeof ProfilesProfileIdRoute
+  ProfilesNewRoute: typeof ProfilesNewRoute
   NodesIndexRoute: typeof NodesIndexRoute
+  ProfilesIndexRoute: typeof ProfilesIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -172,6 +211,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NodesNodeIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profiles/': {
+      id: '/profiles/'
+      path: '/profiles'
+      fullPath: '/profiles/'
+      preLoaderRoute: typeof ProfilesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profiles/$profileId': {
+      id: '/profiles/$profileId'
+      path: '/profiles/$profileId'
+      fullPath: '/profiles/$profileId'
+      preLoaderRoute: typeof ProfilesProfileIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profiles/new': {
+      id: '/profiles/new'
+      path: '/profiles/new'
+      fullPath: '/profiles/new'
+      preLoaderRoute: typeof ProfilesNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -182,7 +242,10 @@ const rootRouteChildren: RootRouteChildren = {
   JobsJobIdRoute: JobsJobIdRoute,
   JobsNewRoute: JobsNewRoute,
   NodesNodeIdRoute: NodesNodeIdRoute,
+  ProfilesProfileIdRoute: ProfilesProfileIdRoute,
+  ProfilesNewRoute: ProfilesNewRoute,
   NodesIndexRoute: NodesIndexRoute,
+  ProfilesIndexRoute: ProfilesIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

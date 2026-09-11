@@ -1,12 +1,24 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Cpu, LayoutList, Menu, Moon, Server, Settings2, Sun, WifiOff, X } from "lucide-react";
+import {
+  BookMarked,
+  Cpu,
+  LayoutList,
+  Menu,
+  Moon,
+  Server,
+  Settings2,
+  Sun,
+  WifiOff,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSettings } from "@/lib/settings";
 import { cn } from "@/lib/utils";
 
 const nav = [
   { to: "/", label: "Jobs", icon: LayoutList },
+  { to: "/profiles", label: "Profiles", icon: BookMarked },
   { to: "/nodes", label: "Nodes", icon: Server },
   { to: "/settings", label: "Settings", icon: Settings2 },
 ] as const;
