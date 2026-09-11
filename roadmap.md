@@ -10,6 +10,7 @@
 - [x] Settings page
 - [x] Skip authorisation entirely when running on localhost
 - [x] README with setup instructions
+- [x] Software profiles (VASP, LAMMPS, RMCProfile, GROMACS, QE, CP2K, PyTorch) with create/edit page and job-form prefill
 
 ## Later (needs the real backend)
 - Replace mock functions in src/lib/api.ts with fetch + real WebSocket log stream
