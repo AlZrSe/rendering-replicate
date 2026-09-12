@@ -206,6 +206,12 @@ function JobDetailPage() {
                 <MetricCard label="GPUs requested" value={job.spec.resources.gpus} />
                 <MetricCard label="CPU cores" value={job.spec.resources.cpus} />
                 <MetricCard label="Memory" value={`${job.spec.resources.memory_gb} GB`} />
+                {(job.spec.resources.vram_gb ?? 0) > 0 && (
+                  <MetricCard
+                    label="VRAM per GPU"
+                    value={`${job.spec.resources.vram_gb} GB`}
+                  />
+                )}
                 <MetricCard
                   label="Max retries"
                   value={job.spec.retry?.max_retries ?? 0}

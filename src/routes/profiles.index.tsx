@@ -66,6 +66,7 @@ function ProfilesPage() {
               <div className="flex flex-wrap gap-3 font-mono text-[11px] text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <Rocket className="size-3.5" /> {p.gpus} GPU
+                  {(p.vram_gb ?? 0) > 0 && ` · ${p.vram_gb} GB VRAM`}
                 </span>
                 <span className="flex items-center gap-1">
                   <Cpu className="size-3.5" /> {p.cpus} cores
