@@ -10,6 +10,8 @@ export interface SoftwareProfile {
   gpus: number;
   cpus: number;
   memory_gb: number;
+  /** GPU memory requested per GPU, in GB. */
+  vram_gb: number;
   input: string;
   output: string;
   max_retries: number;
@@ -33,6 +35,7 @@ export const builtinProfiles: SoftwareProfile[] = [
     gpus: 0,
     cpus: 16,
     memory_gb: 64,
+    vram_gb: 0,
     input: "data/vasp/in",
     output: "data/vasp/out",
     max_retries: 2,
@@ -53,6 +56,7 @@ export const builtinProfiles: SoftwareProfile[] = [
     gpus: 2,
     cpus: 8,
     memory_gb: 48,
+    vram_gb: 24,
     input: "data/vasp/in",
     output: "data/vasp/out",
     max_retries: 2,
@@ -73,6 +77,7 @@ export const builtinProfiles: SoftwareProfile[] = [
     gpus: 1,
     cpus: 8,
     memory_gb: 32,
+    vram_gb: 12,
     input: "data/lammps/in",
     output: "data/lammps/out",
     max_retries: 3,
@@ -90,6 +95,7 @@ export const builtinProfiles: SoftwareProfile[] = [
     gpus: 0,
     cpus: 4,
     memory_gb: 16,
+    vram_gb: 0,
     input: "data/rmc/in",
     output: "data/rmc/out",
     max_retries: 1,
@@ -107,6 +113,7 @@ export const builtinProfiles: SoftwareProfile[] = [
     gpus: 1,
     cpus: 8,
     memory_gb: 24,
+    vram_gb: 12,
     input: "data/gmx/in",
     output: "data/gmx/out",
     max_retries: 2,
@@ -124,6 +131,7 @@ export const builtinProfiles: SoftwareProfile[] = [
     gpus: 0,
     cpus: 12,
     memory_gb: 48,
+    vram_gb: 0,
     input: "data/qe/in",
     output: "data/qe/out",
     max_retries: 2,
@@ -144,6 +152,7 @@ export const builtinProfiles: SoftwareProfile[] = [
     gpus: 0,
     cpus: 16,
     memory_gb: 64,
+    vram_gb: 0,
     input: "data/cp2k/in",
     output: "data/cp2k/out",
     max_retries: 2,
@@ -161,6 +170,7 @@ export const builtinProfiles: SoftwareProfile[] = [
     gpus: 2,
     cpus: 12,
     memory_gb: 64,
+    vram_gb: 16,
     input: "data/in",
     output: "data/out",
     max_retries: 3,
@@ -275,6 +285,7 @@ export const blankProfile = (): SoftwareProfile => ({
   gpus: 0,
   cpus: 4,
   memory_gb: 16,
+  vram_gb: 0,
   input: "data/in",
   output: "data/out",
   max_retries: 2,

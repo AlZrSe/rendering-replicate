@@ -56,6 +56,7 @@ const schema = z.object({
   command: z.string().min(3, "Command is required"),
   working_dir: z.string().optional(),
   gpus: z.coerce.number().int().min(0).max(8),
+  vram_gb: z.coerce.number().int().min(0).max(1024),
   cpus: z.coerce.number().int().min(1).max(128),
   memory_gb: z.coerce.number().int().min(1).max(1024),
   input: z.string().optional(),
@@ -79,6 +80,7 @@ function SubmitJobPage() {
       command: "python -u train.py --config configs/default.yaml",
       working_dir: "/sync/projects/new-run",
       gpus: 1,
+      vram_gb: 12,
       cpus: 8,
       memory_gb: 16,
       input: "data/in",
@@ -104,6 +106,7 @@ function SubmitJobPage() {
       command: p.command,
       working_dir: p.working_dir,
       gpus: p.gpus,
+      vram_gb: p.vram_gb ?? 0,
       cpus: p.cpus,
       memory_gb: p.memory_gb,
       input: p.input,
@@ -140,6 +143,7 @@ function SubmitJobPage() {
       ),
       resources: {
         gpus: Number(values.gpus),
+        vram_gb: Number(values.vram_gb),
         cpus: Number(values.cpus),
         memory_gb: Number(values.memory_gb),
       },
@@ -238,10 +242,17 @@ function SubmitJobPage() {
 
             <div className="panel space-y-4 p-4">
               <h3 className="text-sm font-semibold">Resources</h3>
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <div className="space-y-2">
                   <Label htmlFor="gpus">GPUs</Label>
                   <Input id="gpus" type="number" min={0} {...form.register("gpus")} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="vram_gb">VRAM per GPU (GB)</Label>
+                  <Input id="vram_gb" type="number" min={0} {...form.register("vram_gb")} />
+                  {fieldError("vram_gb") && (
+                    <p className="text-xs text-destructive">{fieldError("vram_gb")}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="cpus">CPU cores</Label>

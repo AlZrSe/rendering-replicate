@@ -9,6 +9,8 @@ export interface JobSpec {
     gpus: number;
     cpus: number;
     memory_gb: number;
+    /** GPU memory requested per GPU, in GB. */
+    vram_gb?: number | undefined;
   };
   paths: {
     input?: string | undefined;
