@@ -24,7 +24,7 @@ export function ProfileForm({ initial, mode }: { initial: SoftwareProfile; mode:
     command: p.command,
     working_dir: p.working_dir,
     env: Object.fromEntries(p.env.filter((e) => e.key.trim()).map((e) => [e.key.trim(), e.value])),
-    resources: { gpus: p.gpus, cpus: p.cpus, memory_gb: p.memory_gb },
+    resources: { gpus: p.gpus, cpus: p.cpus, memory_gb: p.memory_gb, vram_gb: p.vram_gb ?? 0 },
     paths: { input: p.input, output: p.output },
     retry: { max_retries: p.max_retries, retry_delay_seconds: p.retry_delay_seconds },
   });
@@ -107,7 +107,7 @@ export function ProfileForm({ initial, mode }: { initial: SoftwareProfile; mode:
 
         <div className="panel space-y-4 p-4">
           <h3 className="text-sm font-semibold">Default resources</h3>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <div className="space-y-2">
               <Label htmlFor="gpus">GPUs</Label>
               <Input
@@ -116,6 +116,16 @@ export function ProfileForm({ initial, mode }: { initial: SoftwareProfile; mode:
                 min={0}
                 value={p.gpus}
                 onChange={(e) => set("gpus", num(e.target.value))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="vram">VRAM per GPU (GB)</Label>
+              <Input
+                id="vram"
+                type="number"
+                min={0}
+                value={p.vram_gb ?? 0}
+                onChange={(e) => set("vram_gb", num(e.target.value))}
               />
             </div>
             <div className="space-y-2">
