@@ -92,6 +92,43 @@ function SubmitJobPage() {
   const envFields = useFieldArray({ control: form.control, name: "env" });
   const values = form.watch();
 
+  const search = Route.useSearch();
+  const { profiles, ready } = useProfiles();
+  const [profileId, setProfileId] = useState(search.profile ?? "none");
+  const applied = useRef(false);
+
+  const applyProfile = (p: SoftwareProfile) => {
+    form.reset({
+      name: form.getValues("name"),
+      command: p.command,
+      working_dir: p.working_dir,
+      gpus: p.gpus,
+      cpus: p.cpus,
+      memory_gb: p.memory_gb,
+      input: p.input,
+      output: p.output,
+      max_retries: p.max_retries,
+      retry_delay_seconds: p.retry_delay_seconds,
+      env: p.env.length ? p.env.map((e) => ({ ...e })) : [{ key: "", value: "" }],
+    });
+  };
+
+  useEffect(() => {
+    if (!ready || applied.current || !search.profile) return;
+    const p = profiles.find((x) => x.id === search.profile);
+    if (p) {
+      applied.current = true;
+      applyProfile(p);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, profiles, search.profile]);
+
+  const onProfileChange = (id: string) => {
+    setProfileId(id);
+    const p = profiles.find((x) => x.id === id);
+    if (p) applyProfile(p);
+  };
+
   const spec: JobSpec = useMemo(
     () => ({
       name: values.name || "unnamed-job",
