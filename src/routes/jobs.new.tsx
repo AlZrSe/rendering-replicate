@@ -188,6 +188,32 @@ function SubmitJobPage() {
           </TabsList>
 
           <TabsContent value="form" className="mt-4 space-y-5">
+            <div className="panel space-y-3 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="profile">Software profile</Label>
+                <Link to="/profiles" className="text-xs text-primary hover:underline">
+                  Manage profiles
+                </Link>
+              </div>
+              <Select value={profileId} onValueChange={onProfileChange}>
+                <SelectTrigger id="profile" aria-label="Software profile">
+                  <SelectValue placeholder="Start from scratch" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Start from scratch</SelectItem>
+                  {profiles.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Picking a profile fills in the command, resources, paths, environment and retry
+                policy for codes like VASP, LAMMPS or RMCProfile.
+              </p>
+            </div>
+
             <div className="panel space-y-4 p-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Job name *</Label>
