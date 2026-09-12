@@ -41,9 +41,10 @@ export const Route = createFileRoute("/jobs/new")({
       },
     ],
   }),
-  validateSearch: (search: Record<string, unknown>) => ({
-    profile: typeof search.profile === "string" ? search.profile : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { profile?: string } => {
+    const p = search["profile"];
+    return typeof p === "string" ? { profile: p } : {};
+  },
   component: SubmitJobPage,
 });
 
@@ -91,6 +92,43 @@ function SubmitJobPage() {
 
   const envFields = useFieldArray({ control: form.control, name: "env" });
   const values = form.watch();
+
+  const search = Route.useSearch();
+  const { profiles, ready } = useProfiles();
+  const [profileId, setProfileId] = useState(search.profile ?? "none");
+  const applied = useRef(false);
+
+  const applyProfile = (p: SoftwareProfile) => {
+    form.reset({
+      name: form.getValues("name"),
+      command: p.command,
+      working_dir: p.working_dir,
+      gpus: p.gpus,
+      cpus: p.cpus,
+      memory_gb: p.memory_gb,
+      input: p.input,
+      output: p.output,
+      max_retries: p.max_retries,
+      retry_delay_seconds: p.retry_delay_seconds,
+      env: p.env.length ? p.env.map((e) => ({ ...e })) : [{ key: "", value: "" }],
+    });
+  };
+
+  useEffect(() => {
+    if (!ready || applied.current || !search.profile) return;
+    const p = profiles.find((x) => x.id === search.profile);
+    if (p) {
+      applied.current = true;
+      applyProfile(p);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, profiles, search.profile]);
+
+  const onProfileChange = (id: string) => {
+    setProfileId(id);
+    const p = profiles.find((x) => x.id === id);
+    if (p) applyProfile(p);
+  };
 
   const spec: JobSpec = useMemo(
     () => ({
@@ -151,6 +189,32 @@ function SubmitJobPage() {
           </TabsList>
 
           <TabsContent value="form" className="mt-4 space-y-5">
+            <div className="panel space-y-3 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="profile">Software profile</Label>
+                <Link to="/profiles" className="text-xs text-primary hover:underline">
+                  Manage profiles
+                </Link>
+              </div>
+              <Select value={profileId} onValueChange={onProfileChange}>
+                <SelectTrigger id="profile" aria-label="Software profile">
+                  <SelectValue placeholder="Start from scratch" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Start from scratch</SelectItem>
+                  {profiles.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Picking a profile fills in the command, resources, paths, environment and retry
+                policy for codes like VASP, LAMMPS or RMCProfile.
+              </p>
+            </div>
+
             <div className="panel space-y-4 p-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Job name *</Label>

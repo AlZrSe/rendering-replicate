@@ -47,6 +47,9 @@ Endpoints mirrored by the mock layer:
 - `/` — jobs list: status/node filters, search, pagination, polling
 - `/jobs/new` — submission form with live `job.yaml` preview and validation
 - `/jobs/:jobId` — overview, streaming logs (follow, filter, download), metric charts, retry/cancel/delete
+- `/profiles`, `/profiles/new`, `/profiles/:profileId` — software run profiles (VASP, LAMMPS,
+  RMCProfile, GROMACS, Quantum ESPRESSO, CP2K, PyTorch); built-ins are editable and stored in
+  `localStorage`, and any profile can pre-fill the submission form via `/jobs/new?profile=<id>`
 - `/nodes` and `/nodes/:nodeId` — cluster health, specs, load history, heartbeat timeline
 - `/settings` — API URL, token, poll/reconnect timing, dark mode
 - `/login` — bearer token entry (non-local hosts)
