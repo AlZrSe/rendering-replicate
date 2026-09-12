@@ -41,9 +41,10 @@ export const Route = createFileRoute("/jobs/new")({
       },
     ],
   }),
-  validateSearch: (search: Record<string, unknown>) => ({
-    profile: typeof search.profile === "string" ? search.profile : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { profile?: string } => {
+    const p = search["profile"];
+    return typeof p === "string" ? { profile: p } : {};
+  },
   component: SubmitJobPage,
 });
 
