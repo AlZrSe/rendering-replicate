@@ -99,15 +99,17 @@ const statuses: JobStatus[] = [
 ];
 
 function makeSpec(name: string): JobSpec {
+  const gpus = Math.floor(rand() * 2) + 1;
   return {
     name,
     command: `python -u scripts/${name.replace(/-/g, "_")}.py --config configs/${name}.yaml`,
     working_dir: `/sync/projects/${name}`,
     env: { PYTHONUNBUFFERED: "1", CUDA_VISIBLE_DEVICES: "0" },
     resources: {
-      gpus: Math.floor(rand() * 2) + 1,
+      gpus,
       cpus: [4, 8, 12, 16][Math.floor(rand() * 4)]!,
       memory_gb: [8, 16, 32, 64][Math.floor(rand() * 4)]!,
+      vram_gb: [8, 12, 16, 24][Math.floor(rand() * 4)]!,
     },
     paths: { input: `data/${name}/in`, output: `data/${name}/out` },
     retry: { max_retries: 3, retry_delay_seconds: 60 },
