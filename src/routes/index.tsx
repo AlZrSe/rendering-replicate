@@ -217,8 +217,8 @@ function JobsPage() {
                     <td className="px-4 py-3 font-mono text-xs">{job.node_id ?? "—"}</td>
                     <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
                       {job.spec.resources.gpus}
-                      {job.spec.resources.vram_gb_per_gpu > 0
-                        ? `×${job.spec.resources.vram_gb_per_gpu}GB`
+                      {(job.spec.resources.vram_gb ?? 0) > 0
+                        ? `×${job.spec.resources.vram_gb}GB`
                         : ""}{" "}
                       GPU · {job.spec.resources.cpus} CPU · {job.spec.resources.memory_gb} GB
                     </td>
