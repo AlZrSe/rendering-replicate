@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { listJobs, listNodes } from "@/lib/api";
+import { listJobs, listNodes } from "@/services";
 import { fmtAgo, fmtDuration } from "@/lib/format";
 import { useSettings } from "@/lib/settings";
 import type { JobStatus } from "@/lib/types";

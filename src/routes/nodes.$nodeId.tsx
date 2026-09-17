@@ -7,7 +7,7 @@ import { MetricCard } from "@/components/MetricCard";
 import { MetricChart } from "@/components/MetricChart";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getJobMetrics, getNode } from "@/lib/api";
+import { getNode, getNodeMetrics } from "@/services";
 import { fmtAgo, fmtDate } from "@/lib/format";
 import { useSettings } from "@/lib/settings";
 
@@ -42,7 +42,7 @@ function NodeDetailPage() {
 
   const metricsQuery = useQuery({
     queryKey: ["node-metrics", nodeId],
-    queryFn: () => getJobMetrics(`node:${nodeId}`),
+    queryFn: () => getNodeMetrics(nodeId),
   });
 
   const gpuData = (metricsQuery.data?.gpu_metrics ?? []).map((m) => ({

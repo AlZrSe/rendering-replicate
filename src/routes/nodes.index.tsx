@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { listNodes } from "@/lib/api";
+import { listNodes } from "@/services";
 import { fmtAgo } from "@/lib/format";
 import { useSettings } from "@/lib/settings";
 

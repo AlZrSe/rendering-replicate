@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createJob } from "@/lib/api";
+import { createJob } from "@/services";
 import { toYaml } from "@/lib/format";
 import { useProfiles, type SoftwareProfile } from "@/lib/profiles";
 import type { JobSpec } from "@/lib/types";
