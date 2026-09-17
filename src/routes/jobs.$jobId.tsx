@@ -13,7 +13,7 @@ import { ConfirmModal } from "@/components/ConfirmModal";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cancelJob, deleteJob, getJob, getJobLogs, getJobMetrics, retryJob, streamJobLogs } from "@/lib/api";
+import { cancelJob, deleteJob, getJob, getJobLogs, getJobMetrics, retryJob, streamJobLogs } from "@/services";
 import { fmtDate, fmtDuration, fmtGb, toYaml } from "@/lib/format";
 import { useSettings } from "@/lib/settings";
 

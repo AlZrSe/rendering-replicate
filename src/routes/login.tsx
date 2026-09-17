@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { validateToken } from "@/lib/api";
+import { validateToken } from "@/services";
 import { getSettings, setSettings } from "@/lib/settings";
 
 export const Route = createFileRoute("/login")({
