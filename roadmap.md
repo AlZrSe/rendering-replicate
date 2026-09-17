@@ -12,6 +12,8 @@
 - [x] README with setup instructions
 - [x] Software profiles (VASP, LAMMPS, RMCProfile, GROMACS, QE, CP2K, PyTorch) with create/edit page and job-form prefill
 
+- [x] Single services layer (src/services) with mock + HTTP implementations of one ClusterService contract
+
 ## Later (needs the real backend)
-- Replace mock functions in src/lib/api.ts with fetch + real WebSocket log stream
+- Switch VITE_CLUSTER_BACKEND=http and verify src/services/http.ts against the FastAPI routes
 - Date-range filter on the jobs list
