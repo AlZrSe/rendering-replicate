@@ -60,6 +60,8 @@ export interface CPUMetric {
   timestamp: string;
   cpu_percent: number;
   memory_percent: number;
+  temperature_c: number;
+  memory_used_gb: number;
 }
 
 export interface JobMetrics {

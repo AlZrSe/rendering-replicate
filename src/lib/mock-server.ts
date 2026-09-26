@@ -148,10 +148,17 @@ export function metricsFor(jobId: string): JobMetrics {
   let util = 55;
   let mem = 9_000;
   let cpu = 30;
+
+  // Extract node ID from jobId if it's a node metric (format: "node:node-xxx")
+  const nodeId = jobId.startsWith("node:") ? jobId.slice(5) : null;
+  const nodeSpec = nodeId ? nodes.find((n) => n.node_id === nodeId) : null;
+  const systemMemoryGb = nodeSpec?.memory_gb ?? 64;
+
   for (let i = 120; i >= 0; i--) {
     util = Math.min(99, Math.max(6, util + (rand() - 0.5) * 18));
     mem = Math.min(total, Math.max(1200, mem + (rand() - 0.45) * 900));
     cpu = Math.min(100, Math.max(4, cpu + (rand() - 0.5) * 14));
+    const memoryPercent = Math.round(30 + cpu * 0.4);
     const timestamp = iso(i * 30_000);
     gpu_metrics.push({
       timestamp,
@@ -164,7 +171,9 @@ export function metricsFor(jobId: string): JobMetrics {
     cpu_metrics.push({
       timestamp,
       cpu_percent: Math.round(cpu),
-      memory_percent: Math.round(30 + cpu * 0.4),
+      memory_percent: memoryPercent,
+      temperature_c: Math.round(45 + cpu * 0.35),
+      memory_used_gb: Math.round(((systemMemoryGb * memoryPercent) / 100) * 100) / 100,
     });
   }
   const mems = gpu_metrics.map((m) => m.memory_used_mb);

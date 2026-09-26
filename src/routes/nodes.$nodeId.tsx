@@ -54,6 +54,8 @@ function NodeDetailPage() {
     timestamp: m.timestamp,
     cpu_percent: m.cpu_percent,
     memory_percent: m.memory_percent,
+    temperature_c: m.temperature_c,
+    memory_used_gb: m.memory_used_gb,
   }));
 
   const heartbeats = (metricsQuery.data?.cpu_metrics ?? []).slice(-24);
@@ -162,10 +164,16 @@ function NodeDetailPage() {
                   series={[
                     { key: "cpu_percent", label: "CPU", color: "var(--color-chart-3)", unit: "%" },
                     {
-                      key: "memory_percent",
+                      key: "temperature_c",
+                      label: "Temp",
+                      color: "var(--color-chart-4)",
+                      unit: "°C",
+                    },
+                    {
+                      key: "memory_used_gb",
                       label: "RAM",
                       color: "var(--color-chart-5)",
-                      unit: "%",
+                      unit: " GB",
                     },
                   ]}
                 />

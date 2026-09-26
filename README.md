@@ -29,18 +29,18 @@ typed layer in `src/lib/api.ts` — replace the function bodies there with `fetc
 
 Endpoints mirrored by the mock layer:
 
-| Method | Endpoint | Function |
-| --- | --- | --- |
-| GET | `/jobs` | `listJobs` |
-| POST | `/jobs` | `createJob` |
-| GET | `/jobs/:id` | `getJob` |
-| WS | `/jobs/:id/logs` | `streamJobLogs` |
-| GET | `/jobs/:id/metrics` | `getJobMetrics` |
-| POST | `/jobs/:id/retry` | `retryJob` |
-| POST | `/jobs/:id/cancel` | `cancelJob` |
-| DELETE | `/jobs/:id` | `deleteJob` |
-| GET | `/nodes` | `listNodes` |
-| GET | `/nodes/:id` | `getNode` |
+| Method | Endpoint            | Function        |
+| ------ | ------------------- | --------------- |
+| GET    | `/jobs`             | `listJobs`      |
+| POST   | `/jobs`             | `createJob`     |
+| GET    | `/jobs/:id`         | `getJob`        |
+| WS     | `/jobs/:id/logs`    | `streamJobLogs` |
+| GET    | `/jobs/:id/metrics` | `getJobMetrics` |
+| POST   | `/jobs/:id/retry`   | `retryJob`      |
+| POST   | `/jobs/:id/cancel`  | `cancelJob`     |
+| DELETE | `/jobs/:id`         | `deleteJob`     |
+| GET    | `/nodes`            | `listNodes`     |
+| GET    | `/nodes/:id`        | `getNode`       |
 
 ## Pages
 
