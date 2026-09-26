@@ -5,14 +5,60 @@
 import { jobs, logsFor, metricsFor, nodes, subscribeLogs } from "@/lib/mock-server";
 import type { JobListResult, JobMetrics, JobSpec, JobState, NodeSpec } from "@/lib/types";
 import { getSettings } from "@/lib/settings";
-import type { ClusterService, JobQuery, LogStreamStatus, Unsubscribe } from "./types";
+import type {
+  ClusterService,
+  JobQuery,
+  LogStreamStatus,
+  Unsubscribe,
+  BackendErrorResponse,
+} from "./types";
 import { ServiceError } from "./types";
 
 const delay = (ms = 260) => new Promise((r) => setTimeout(r, ms));
 
+function createBackendError(
+  status: number,
+  detail: string,
+  errorCode: string,
+): BackendErrorResponse {
+  return {
+    status,
+    title: getErrorTitle(status),
+    detail,
+    instance: "",
+    error_code: errorCode,
+  };
+}
+
+function getErrorTitle(status: number): string {
+  switch (status) {
+    case 400:
+      return "Bad Request";
+    case 401:
+      return "Unauthorized";
+    case 403:
+      return "Forbidden";
+    case 404:
+      return "Not Found";
+    case 409:
+      return "Conflict";
+    case 422:
+      return "Unprocessable Entity";
+    case 500:
+      return "Internal Server Error";
+    case 503:
+      return "Service Unavailable";
+    default:
+      return "Error";
+  }
+}
+
 function requireToken() {
   const { token } = getSettings();
-  if (!token) throw new ServiceError(401, "Missing bearer token");
+  if (!token) {
+    const error = createBackendError(401, "Missing bearer token", "AUTH_TOKEN_MISSING");
+    throw new ServiceError(401, "Missing bearer token", error);
+  }
   return token;
 }
 
@@ -41,7 +87,10 @@ export const mockService: ClusterService = {
     requireToken();
     await delay();
     const job = jobs.find((j) => j.job_id === id);
-    if (!job) throw new ServiceError(404, `Job ${id} not found`);
+    if (!job) {
+      const error = createBackendError(404, `Job ${id} not found`, "JOB_NOT_FOUND");
+      throw new ServiceError(404, `Job ${id} not found`, error);
+    }
     return job;
   },
 
@@ -117,7 +166,10 @@ export const mockService: ClusterService = {
     requireToken();
     await delay();
     const node = nodes.find((n) => n.node_id === id);
-    if (!node) throw new ServiceError(404, `Node ${id} not found`);
+    if (!node) {
+      const error = createBackendError(404, `Node ${id} not found`, "NODE_NOT_FOUND");
+      throw new ServiceError(404, `Node ${id} not found`, error);
+    }
     return node;
   },
 

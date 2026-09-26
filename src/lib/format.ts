@@ -30,7 +30,15 @@ export function toYaml(value: unknown, indent = 0): string {
   }
   if (typeof value === "object") {
     const entries = Object.entries(value as Record<string, unknown>).filter(
-      ([, v]) => v !== undefined && v !== "" && !(typeof v === "object" && v !== null && !Array.isArray(v) && Object.keys(v as object).length === 0),
+      ([, v]) =>
+        v !== undefined &&
+        v !== "" &&
+        !(
+          typeof v === "object" &&
+          v !== null &&
+          !Array.isArray(v) &&
+          Object.keys(v as object).length === 0
+        ),
     );
     return entries
       .map(([k, v]) => {

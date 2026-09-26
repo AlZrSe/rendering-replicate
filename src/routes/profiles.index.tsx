@@ -53,7 +53,9 @@ function ProfilesPage() {
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <h2 className="truncate text-sm font-semibold">{p.name}</h2>
-                  <p className="font-mono text-[11px] text-muted-foreground">{p.software || "custom"}</p>
+                  <p className="font-mono text-[11px] text-muted-foreground">
+                    {p.software || "custom"}
+                  </p>
                 </div>
                 <Badge variant={p.builtin ? "secondary" : "outline"}>
                   {p.builtin ? "built-in" : "custom"}

@@ -1,7 +1,7 @@
-import { Page, Locator, expect } from '@playwright/test';
+import { Page, Locator, expect } from "@playwright/test";
 
-export const TEST_TOKEN = 'localhost-no-auth';
-export const TEST_API_URL = 'http://localhost:8000/api/v1';
+export const TEST_TOKEN = "localhost-no-auth";
+export const TEST_API_URL = "http://localhost:8000/api/v1";
 
 export interface JobData {
   name: string;
@@ -19,35 +19,44 @@ export interface JobData {
 }
 
 export const defaultJob: JobData = {
-  name: 'e2e-test-job',
+  name: "e2e-test-job",
   command: 'echo "hello world" && sleep 2',
-  working_dir: '/tmp/e2e-test',
+  working_dir: "/tmp/e2e-test",
   gpus: 0,
   cpus: 2,
   memory_gb: 4,
   vram_gb: 0,
   env: {},
-  input: 'data/in',
-  output: 'data/out',
+  input: "data/in",
+  output: "data/out",
   max_retries: 1,
   retry_delay_seconds: 30,
 };
 
 export async function login(page: Page, token: string = TEST_TOKEN) {
-  await page.goto('/login');
+  await page.goto("/login");
   await page.fill('input[id="token"]', token);
   await page.click('button:has-text("Sign in")');
-  await expect(page).toHaveURL('/');
+  await expect(page).toHaveURL("/");
 }
 
 export async function gotoSettings(page: Page) {
   await page.click('a[href="/settings"], button:has-text("Settings")');
-  await expect(page).toHaveURL('/settings');
+  await expect(page).toHaveURL("/settings");
 }
 
-export async function updateSettings(page: Page, settings: Partial<{ apiBaseUrl: string; token: string; theme: string; pollIntervalMs: number; wsReconnectMs: number }>) {
+export async function updateSettings(
+  page: Page,
+  settings: Partial<{
+    apiBaseUrl: string;
+    token: string;
+    theme: string;
+    pollIntervalMs: number;
+    wsReconnectMs: number;
+  }>,
+) {
   await gotoSettings(page);
-  
+
   if (settings.apiBaseUrl) {
     await page.fill('input[id="api"]', settings.apiBaseUrl);
   }
@@ -61,7 +70,7 @@ export async function updateSettings(page: Page, settings: Partial<{ apiBaseUrl:
     await page.fill('input[id="reconnect"]', String(settings.wsReconnectMs));
   }
   if (settings.theme) {
-    const isDark = settings.theme === 'dark';
+    const isDark = settings.theme === "dark";
     const switchEl = page.locator('button[role="switch"]');
     const checked = await switchEl.isChecked();
     if (checked !== isDark) {
@@ -69,12 +78,12 @@ export async function updateSettings(page: Page, settings: Partial<{ apiBaseUrl:
     }
   }
   await page.click('button:has-text("Save settings")');
-  await expect(page.locator('text=Settings saved')).toBeVisible();
+  await expect(page.locator("text=Settings saved")).toBeVisible();
 }
 
 export async function createJob(page: Page, job: JobData = defaultJob) {
   await page.click('a[href="/jobs/new"], button:has-text("New Job")');
-  await expect(page).toHaveURL('/jobs/new');
+  await expect(page).toHaveURL("/jobs/new");
 
   await page.fill('input[name="name"]', job.name);
   await page.fill('textarea[name="command"]', job.command);
@@ -82,11 +91,11 @@ export async function createJob(page: Page, job: JobData = defaultJob) {
   await page.fill('input[name="gpus"]', String(job.gpus));
   await page.fill('input[name="cpus"]', String(job.cpus));
   await page.fill('input[name="memory_gb"]', String(job.memory_gb));
-  
+
   if (job.vram_gb !== undefined) {
     await page.fill('input[name="vram_gb"]', String(job.vram_gb));
   }
-  
+
   if (job.input) {
     await page.fill('input[name="input"]', job.input);
   }
@@ -101,15 +110,20 @@ export async function createJob(page: Page, job: JobData = defaultJob) {
   }
 
   await page.click('button:has-text("Create job")');
-  
+
   // Wait for redirect to job detail page
   await page.waitForURL(/\/jobs\/job-\d+/);
-  
+
   const jobId = page.url().match(/\/jobs\/(job-\d+)/)?.[1];
   return jobId;
 }
 
-export async function waitForJobStatus(page: Page, jobId: string, expectedStatus: string, timeout = 30000) {
+export async function waitForJobStatus(
+  page: Page,
+  jobId: string,
+  expectedStatus: string,
+  timeout = 30000,
+) {
   const startTime = Date.now();
   while (Date.now() - startTime < timeout) {
     const response = await page.request.get(`${TEST_API_URL}/jobs/${jobId}`, {

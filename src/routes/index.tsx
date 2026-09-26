@@ -200,7 +200,10 @@ function JobsPage() {
               </thead>
               <tbody>
                 {jobsQuery.data!.items.map((job) => (
-                  <tr key={job.job_id} className="border-b border-border/60 last:border-0 hover:bg-accent/40">
+                  <tr
+                    key={job.job_id}
+                    className="border-b border-border/60 last:border-0 hover:bg-accent/40"
+                  >
                     <td className="px-4 py-3">
                       <Link
                         to="/jobs/$jobId"

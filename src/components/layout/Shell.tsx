@@ -82,7 +82,10 @@ export function Shell({
         </div>
         <nav className="flex flex-1 flex-col gap-1 px-3">
           {nav.map(({ to, label, icon: Icon }) => {
-            const active = to === "/" ? pathname === "/" || pathname.startsWith("/jobs") : pathname.startsWith(to);
+            const active =
+              to === "/"
+                ? pathname === "/" || pathname.startsWith("/jobs")
+                : pathname.startsWith(to);
             return (
               <Link
                 key={to}

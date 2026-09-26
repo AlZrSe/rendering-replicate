@@ -109,8 +109,8 @@ function LoginPage() {
             {busy ? "Validating…" : "Connect"}
           </Button>
           <p className="text-center text-xs text-muted-foreground">
-            The backend isn't live yet, so this dashboard runs on realistic mock data. Any token of 8+
-            characters works.
+            The backend isn't live yet, so this dashboard runs on realistic mock data. Any token of
+            8+ characters works.
           </p>
         </div>
       </form>

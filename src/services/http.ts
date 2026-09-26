@@ -4,7 +4,13 @@
  */
 import type { JobListResult, JobMetrics, JobSpec, JobState, NodeSpec } from "@/lib/types";
 import { getSettings } from "@/lib/settings";
-import type { ClusterService, JobQuery, LogStreamStatus, Unsubscribe } from "./types";
+import type {
+  ClusterService,
+  JobQuery,
+  LogStreamStatus,
+  Unsubscribe,
+  BackendErrorResponse,
+} from "./types";
 import { ServiceError } from "./types";
 
 function base() {
@@ -21,7 +27,18 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
       ...(init.headers ?? {}),
     },
   });
-  if (!res.ok) throw new ServiceError(res.status, `${init.method ?? "GET"} ${path} failed`);
+  if (!res.ok) {
+    let backendError: BackendErrorResponse | undefined;
+    try {
+      const errorData = await res.json();
+      if (errorData.error_code) {
+        backendError = errorData as BackendErrorResponse;
+      }
+    } catch {
+      // Ignore JSON parse errors
+    }
+    throw new ServiceError(res.status, `${init.method ?? "GET"} ${path} failed`, backendError);
+  }
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }

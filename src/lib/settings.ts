@@ -42,14 +42,15 @@ export function getSettings(): Settings {
   if (typeof window === "undefined") return defaultSettings;
   try {
     const raw = window.localStorage.getItem(KEY);
-    cache = raw ? { ...defaultSettings, ...(JSON.parse(raw) as Partial<Settings>) } : defaultSettings;
+    cache = raw
+      ? { ...defaultSettings, ...(JSON.parse(raw) as Partial<Settings>) }
+      : defaultSettings;
   } catch {
     cache = defaultSettings;
   }
   if (!cache.token && isLocalhost()) cache = { ...cache, token: LOCAL_TOKEN };
   return cache;
 }
-
 
 export function setSettings(patch: Partial<Settings>) {
   const next = { ...getSettings(), ...patch };
@@ -82,7 +83,6 @@ export function useSettings() {
       listeners.delete(l);
     };
   }, []);
-
 
   const update = useCallback((patch: Partial<Settings>) => setSettings(patch), []);
   return { settings, update, ready };

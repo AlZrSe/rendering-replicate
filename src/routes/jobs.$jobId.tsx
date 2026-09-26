@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Ban, RotateCcw, Trash2 } from "lucide-react";
+import { ArrowLeft, Ban, RotateCcw, Trash2, AlertCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Shell } from "@/components/layout/Shell";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -13,9 +13,20 @@ import { ConfirmModal } from "@/components/ConfirmModal";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cancelJob, deleteJob, getJob, getJobLogs, getJobMetrics, retryJob, streamJobLogs } from "@/services";
+import {
+  cancelJob,
+  deleteJob,
+  getJob,
+  getJobLogs,
+  getJobMetrics,
+  retryJob,
+  streamJobLogs,
+} from "@/services";
 import { fmtDate, fmtDuration, fmtGb, toYaml } from "@/lib/format";
 import { useSettings } from "@/lib/settings";
+import { useErrorHandler, createMutationErrorHandler } from "@/hooks/useErrorHandler";
+import { getUserFriendlyError } from "@/lib/error-messages";
+import { ServiceError } from "@/services/types";
 
 export const Route = createFileRoute("/jobs/$jobId")({
   head: ({ params }) => ({
@@ -43,6 +54,7 @@ function JobDetailPage() {
   const [dialog, setDialog] = useState<"retry" | "cancel" | "delete" | null>(null);
   const [lines, setLines] = useState<string[]>([]);
   const [conn, setConn] = useState<"connecting" | "open" | "closed">("connecting");
+  const { handleError: handleJobError } = useErrorHandler();
 
   const jobQuery = useQuery({
     queryKey: ["job", jobId],
@@ -54,6 +66,14 @@ function JobDetailPage() {
     queryFn: () => getJobMetrics(jobId),
   });
 
+  // Handle query errors
+  if (jobQuery.isError) {
+    handleJobError(jobQuery.error);
+  }
+  if (metricsQuery.isError) {
+    handleJobError(metricsQuery.error, "metrics");
+  }
+
   useEffect(() => {
     let stop: (() => void) | undefined;
     let cancelled = false;
@@ -63,12 +83,15 @@ function JobDetailPage() {
         setLines(initial);
         stop = streamJobLogs(jobId, (line) => setLines((prev) => [...prev, line]), setConn);
       })
-      .catch(() => setConn("closed"));
+      .catch((error) => {
+        handleJobError(error, "logs");
+        setConn("closed");
+      });
     return () => {
       cancelled = true;
       stop?.();
     };
-  }, [jobId]);
+  }, [jobId, handleJobError]);
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["job", jobId] });
@@ -81,6 +104,7 @@ function JobDetailPage() {
       invalidate();
       toast.success("Job re-queued");
     },
+    onError: createMutationErrorHandler(handleJobError),
   });
   const cancel = useMutation({
     mutationFn: () => cancelJob(jobId),
@@ -88,6 +112,7 @@ function JobDetailPage() {
       invalidate();
       toast.success("Job cancelled");
     },
+    onError: createMutationErrorHandler(handleJobError),
   });
   const remove = useMutation({
     mutationFn: () => deleteJob(jobId),
@@ -96,6 +121,7 @@ function JobDetailPage() {
       toast.success("Job deleted");
       navigate({ to: "/" });
     },
+    onError: createMutationErrorHandler(handleJobError),
   });
 
   const job = jobQuery.data;
@@ -130,7 +156,14 @@ function JobDetailPage() {
           <Skeleton className="h-24 w-full" />
           <Skeleton className="h-64 w-full" />
         </div>
-      ) : jobQuery.isError || !job ? (
+      ) : jobQuery.isError ? (
+        <ErrorState
+          error={jobQuery.error}
+          title={`Job ${jobId}`}
+          onRetry={() => jobQuery.refetch()}
+          onBack={() => navigate({ to: "/" })}
+        />
+      ) : !job ? (
         <div className="panel p-8 text-center">
           <p className="text-sm text-muted-foreground">Job {jobId} could not be loaded.</p>
         </div>
@@ -207,10 +240,7 @@ function JobDetailPage() {
                 <MetricCard label="CPU cores" value={job.spec.resources.cpus} />
                 <MetricCard label="Memory" value={`${job.spec.resources.memory_gb} GB`} />
                 {(job.spec.resources.vram_gb ?? 0) > 0 && (
-                  <MetricCard
-                    label="VRAM per GPU"
-                    value={`${job.spec.resources.vram_gb} GB`}
-                  />
+                  <MetricCard label="VRAM per GPU" value={`${job.spec.resources.vram_gb} GB`} />
                 )}
                 <MetricCard
                   label="Max retries"
@@ -227,6 +257,12 @@ function JobDetailPage() {
             <TabsContent value="metrics" className="mt-4 space-y-4">
               {metricsQuery.isPending || !metrics ? (
                 <Skeleton className="h-64 w-full" />
+              ) : metricsQuery.isError ? (
+                <ErrorState
+                  error={metricsQuery.error}
+                  title="Metrics"
+                  onRetry={() => metricsQuery.refetch()}
+                />
               ) : (
                 <>
                   <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -292,7 +328,12 @@ function JobDetailPage() {
                       data={cpuData}
                       domain={[0, 100]}
                       series={[
-                        { key: "cpu_percent", label: "CPU", color: "var(--color-chart-3)", unit: "%" },
+                        {
+                          key: "cpu_percent",
+                          label: "CPU",
+                          color: "var(--color-chart-3)",
+                          unit: "%",
+                        },
                         {
                           key: "memory_percent",
                           label: "RAM",
@@ -344,6 +385,42 @@ function Field({ label, value }: { label: string; value: string }) {
     <div>
       <p className="text-xs tracking-wide text-muted-foreground uppercase">{label}</p>
       <p className="mt-1.5 font-mono text-sm">{value}</p>
+    </div>
+  );
+}
+
+interface ErrorStateProps {
+  error: unknown;
+  title: string;
+  onRetry?: () => void;
+  onBack?: () => void;
+}
+
+function ErrorState({ error, title, onRetry, onBack }: ErrorStateProps) {
+  const friendly =
+    error instanceof ServiceError
+      ? getUserFriendlyError(error)
+      : getUserFriendlyError(new ServiceError(500, String(error)));
+
+  return (
+    <div className="panel p-8 text-center space-y-4">
+      <AlertCircle className="size-12 text-destructive mx-auto" />
+      <h3 className="text-lg font-semibold">{title} could not be loaded</h3>
+      <p className="text-sm text-muted-foreground max-w-md mx-auto">
+        {friendly.message}: {friendly.suggestion}
+      </p>
+      <div className="flex items-center justify-center gap-3">
+        {onRetry && (
+          <Button variant="outline" onClick={onRetry}>
+            <RefreshCw className="size-4" /> Retry
+          </Button>
+        )}
+        {onBack && (
+          <Button variant="secondary" onClick={onBack}>
+            <ArrowLeft className="size-4" /> Back to Jobs
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

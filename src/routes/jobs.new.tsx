@@ -24,6 +24,11 @@ import { createJob } from "@/services";
 import { toYaml } from "@/lib/format";
 import { useProfiles, type SoftwareProfile } from "@/lib/profiles";
 import type { JobSpec } from "@/lib/types";
+import {
+  useErrorHandler,
+  createMutationErrorHandler,
+  useFormErrorHandler,
+} from "@/hooks/useErrorHandler";
 
 export const Route = createFileRoute("/jobs/new")({
   head: () => ({
@@ -72,6 +77,8 @@ function SubmitJobPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [tab, setTab] = useState("form");
+  const { handleError, parseValidationErrors, getFieldError } = useFormErrorHandler();
+  const { handleError: handleMutationError } = useErrorHandler();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -165,13 +172,17 @@ function SubmitJobPage() {
       toast.success(`Job ${job.job_id} queued`);
       navigate({ to: "/jobs/$jobId", params: { jobId: job.job_id } });
     },
-    onError: () => toast.error("Could not submit the job"),
+    onError: (error) => handleMutationError(error),
   });
 
   const onSubmit = form.handleSubmit(() => mutation.mutate());
 
+  // Parse backend validation errors for inline display
+  const backendFieldErrors = mutation.isError ? parseValidationErrors(mutation.error) : {};
+
   const fieldError = (name: keyof FormValues) =>
-    form.formState.errors[name]?.message as string | undefined;
+    getFieldError(backendFieldErrors, name) ||
+    (form.formState.errors[name]?.message as string | undefined);
 
   return (
     <Shell
@@ -229,14 +240,23 @@ function SubmitJobPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="command">Command *</Label>
-                <Textarea id="command" rows={3} className="font-mono text-xs" {...form.register("command")} />
+                <Textarea
+                  id="command"
+                  rows={3}
+                  className="font-mono text-xs"
+                  {...form.register("command")}
+                />
                 {fieldError("command") && (
                   <p className="text-xs text-destructive">{fieldError("command")}</p>
                 )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="working_dir">Working directory</Label>
-                <Input id="working_dir" className="font-mono text-xs" {...form.register("working_dir")} />
+                <Input
+                  id="working_dir"
+                  className="font-mono text-xs"
+                  {...form.register("working_dir")}
+                />
               </div>
             </div>
 
@@ -352,6 +372,12 @@ function SubmitJobPage() {
           <Button type="submit" className="w-full" disabled={mutation.isPending}>
             {mutation.isPending ? "Submitting…" : "Submit job"}
           </Button>
+          {mutation.isError && (
+            <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive text-center">
+              {getFieldError(parseValidationErrors(mutation.error), "message") ||
+                "Could not submit the job"}
+            </div>
+          )}
           <p className="text-xs text-muted-foreground">
             The spec is sent as multipart <span className="font-mono">job.yaml</span> to{" "}
             <span className="font-mono">POST /jobs</span>.

@@ -21,6 +21,17 @@ export type LogStreamStatus = "connecting" | "open" | "closed";
 export type Unsubscribe = () => void;
 
 /**
+ * Backend error response format (matches ErrorResponse model).
+ */
+export interface BackendErrorResponse {
+  status: number;
+  title: string;
+  detail: string;
+  instance: string;
+  error_code: string;
+}
+
+/**
  * The single contract between the UI and the cluster backend.
  * Every backend call in the app goes through this interface, so the whole
  * app can run against the mock implementation with no server present.
@@ -53,9 +64,18 @@ export interface ClusterService {
 
 export class ServiceError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  error_code?: string;
+  title?: string;
+  detail?: string;
+
+  constructor(status: number, message: string, backendError?: BackendErrorResponse) {
     super(message);
     this.name = "ServiceError";
     this.status = status;
+    if (backendError) {
+      this.error_code = backendError.error_code;
+      this.title = backendError.title;
+      this.detail = backendError.detail;
+    }
   }
 }

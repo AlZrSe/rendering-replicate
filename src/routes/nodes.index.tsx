@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Cpu, HardDrive, MemoryStick, Server } from "lucide-react";
+import { Cpu, HardDrive, MemoryStick, Server, AlertCircle, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 import { Shell } from "@/components/layout/Shell";
 import { NodeStatusBadge } from "@/components/StatusBadge";
 import { EmptyState } from "@/components/EmptyState";
@@ -13,9 +14,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { listNodes } from "@/services";
 import { fmtAgo } from "@/lib/format";
 import { useSettings } from "@/lib/settings";
+import { useErrorHandler, createQueryErrorHandler } from "@/hooks/useErrorHandler";
 
 export const Route = createFileRoute("/nodes/")({
   head: () => ({
@@ -39,11 +42,18 @@ export const Route = createFileRoute("/nodes/")({
 function NodesPage() {
   const { settings } = useSettings();
   const [filter, setFilter] = useState<"ALL" | "ONLINE" | "OFFLINE">("ALL");
+  const { handleError } = useErrorHandler();
+
   const nodesQuery = useQuery({
     queryKey: ["nodes"],
     queryFn: listNodes,
     refetchInterval: settings.pollIntervalMs,
   });
+
+  // Handle query errors
+  if (nodesQuery.isError) {
+    handleError(nodesQuery.error);
+  }
 
   const nodes = (nodesQuery.data ?? []).filter((n) => filter === "ALL" || n.status === filter);
 
@@ -69,6 +79,15 @@ function NodesPage() {
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-44 w-full" />
           ))}
+        </div>
+      ) : nodesQuery.isError ? (
+        <div className="panel p-8 text-center space-y-4">
+          <AlertCircle className="size-12 text-destructive mx-auto" />
+          <h3 className="text-lg font-semibold">Nodes could not be loaded</h3>
+          <p className="text-sm text-muted-foreground">Failed to fetch nodes. Please try again.</p>
+          <Button variant="outline" onClick={() => nodesQuery.refetch()}>
+            <RefreshCw className="size-4" /> Retry
+          </Button>
         </div>
       ) : nodes.length === 0 ? (
         <div className="panel">

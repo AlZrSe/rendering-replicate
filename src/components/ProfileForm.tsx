@@ -10,7 +10,13 @@ import { YamlBlock } from "@/components/YamlBlock";
 import { toYaml } from "@/lib/format";
 import { deleteProfile, saveProfile, slugify, type SoftwareProfile } from "@/lib/profiles";
 
-export function ProfileForm({ initial, mode }: { initial: SoftwareProfile; mode: "create" | "edit" }) {
+export function ProfileForm({
+  initial,
+  mode,
+}: {
+  initial: SoftwareProfile;
+  mode: "create" | "edit";
+}) {
   const navigate = useNavigate();
   const [p, setP] = useState<SoftwareProfile>(initial);
   const set = <K extends keyof SoftwareProfile>(key: K, value: SoftwareProfile[K]) =>
@@ -222,7 +228,12 @@ export function ProfileForm({ initial, mode }: { initial: SoftwareProfile; mode:
                   variant="ghost"
                   size="icon"
                   aria-label="Remove variable"
-                  onClick={() => set("env", p.env.filter((_, j) => j !== i))}
+                  onClick={() =>
+                    set(
+                      "env",
+                      p.env.filter((_, j) => j !== i),
+                    )
+                  }
                 >
                   <Trash2 className="size-4 text-muted-foreground" />
                 </Button>
