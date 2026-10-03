@@ -42,6 +42,28 @@ Endpoints mirrored by the mock layer:
 | GET    | `/nodes`            | `listNodes`     |
 | GET    | `/nodes/:id`        | `getNode`       |
 
+## Testing
+
+There are two separate test suites with different runners, different scopes and different
+requirements. They are never mixed.
+
+| | Unit + integration (vitest) | End-to-end (Playwright) |
+| --- | --- | --- |
+| Command | `npm test` | `npm run test:e2e` |
+| Watch mode | `npm run test:watch` | `npm run test:e2e:ui`, `npm run test:e2e:headed` |
+| Runner config | `vitest.config.ts` | `playwright.config.ts` |
+| File locations | `src/**/*.test.ts`, `tests/integration/**/*.test.ts` | `tests/e2e/**/*.spec.ts` |
+| Needs a backend | No | Yes — a live backend and dev server |
+| Browser required | No (jsdom) | Yes (Chromium) |
+
+`npm test` runs the vitest unit and integration suites in jsdom. It needs neither a running
+backend nor a dev server. `npm run test:e2e` runs the Playwright suite in a real browser and
+needs both.
+
+The two suites cannot collide: vitest collects the `.test.ts` extension under `src/` and
+`tests/integration/` only and explicitly excludes `tests/e2e/**`, while Playwright only owns
+`tests/e2e/` via its `testDir`.
+
 ## Pages
 
 - `/` — jobs list: status/node filters, search, pagination, polling
