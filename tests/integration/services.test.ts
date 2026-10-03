@@ -1,5 +1,6 @@
-import { test, expect, describe, beforeAll, afterAll, vi } from "vitest";
-import { mockService, httpService, resetBackendReachabilityCache } from "../../src/services";
+import { test, expect, describe, beforeAll, afterAll, afterEach, vi } from "vitest";
+import { mockService, httpService } from "../../src/services/testing";
+import { resetServiceCache } from "../../src/services";
 import { getSettings, setSettings } from "../../src/lib/settings";
 import type { JobSpec } from "../../src/lib/types";
 
@@ -19,19 +20,169 @@ const TEST_JOB_SPEC = {
   retry_delay_seconds: 30,
 };
 
+// ---------------------------------------------------------------------------
+// Fixtures for the "stubbed transport" block below.
+//
+// These are hand-written stand-ins for the shapes documented in openapi.yaml,
+// deliberately *not* captures of a running cluster. They use the same
+// stubbed-fetch pattern as src/services/http.test.ts: the service under test
+// runs for real, only `fetch` is replaced.
+//
+// The rule this enforces: no unit or integration test may read mutable cluster
+// state. `npm test` therefore returns the same verdict whether or not a backend
+// is listening on :8000, and a green run means something was actually asserted.
+// Exercising a real backend is the e2e suite's job (playwright.config.ts
+// waits on /health there) — see issue #38.
+// ---------------------------------------------------------------------------
+
+interface RecordedRequest {
+  url: string;
+  init: RequestInit | undefined;
+}
+
+interface StubRoute {
+  status?: number;
+  /** A literal body, or a function of the request for round-trip assertions. */
+  body: unknown;
+}
+
+const BACKEND_URL = "http://localhost:8000/api/v1";
+const API_PREFIX = "/api/v1";
+
+/** Minimal stand-in — the cases below only touch `ok`, `status` and `json()`. */
+function jsonResponse(status: number, body: unknown): Response {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    json: async () => body,
+  } as unknown as Response;
+}
+
+/**
+ * Installs a `fetch` stub that answers from `routes` (keyed `"METHOD /path"`,
+ * query string ignored) and records every call.
+ *
+ * An unmatched URL throws rather than falling through. That is the point: it
+ * makes it impossible for a case to quietly escape to a real backend, and turns
+ * a missing or misspelled fixture into a loud failure instead of an empty
+ * response that some assertion happens to accept.
+ */
+function stubFetch(routes: Record<string, StubRoute>) {
+  const calls: RecordedRequest[] = [];
+
+  const fetchMock = vi.fn(async (input: unknown, init?: RequestInit) => {
+    const url = String(input);
+    const record: RecordedRequest = { url, init };
+    calls.push(record);
+
+    const at = url.indexOf(API_PREFIX);
+    if (at === -1) {
+      throw new Error(`stub fetch: ${url} is not under ${API_PREFIX}`);
+    }
+    const path = url.slice(at + API_PREFIX.length).split("?")[0];
+    const route = routes[`${(init?.method ?? "GET").toUpperCase()} ${path}`];
+
+    if (!route) {
+      throw new Error(
+        `stub fetch: no fixture for ${init?.method ?? "GET"} ${path} ` +
+          `(fixtures: ${Object.keys(routes).join(", ") || "none"})`,
+      );
+    }
+
+    const body = typeof route.body === "function" ? route.body(record) : route.body;
+    return jsonResponse(route.status ?? 200, body);
+  });
+
+  vi.stubGlobal("fetch", fetchMock);
+  return { fetchMock, calls };
+}
+
+const HEALTH_FIXTURE = {
+  status: "healthy",
+  version: "0.1.0",
+  store: { status: "healthy", nodes: 1, jobs: 1 },
+  config: { status: "healthy", syncthing_root: "/tmp/syncthing", api_version: "/api/v1" },
+  syncthing: { status: "available", path: "/tmp/syncthing" },
+  database: { status: "healthy", url: "./scientific_home_cluster.db" },
+};
+
+const JOB_STATE_FIXTURE = {
+  job_id: "job-1",
+  spec: {
+    name: "integration-test-job",
+    command: 'echo "test" && sleep 1',
+    working_dir: "/tmp/test",
+    env: {},
+    resources: { gpus: 0, cpus: 2, memory_gb: 4, vram_gb: 0 },
+    paths: { input: "data/in", output: "data/out" },
+    retry: { max_retries: 1, retry_delay_seconds: 30 },
+  },
+  status: "PENDING",
+  node_id: "node-01",
+  created_at: "2026-01-01T00:00:00Z",
+  retry_count: 0,
+};
+
+const JOB_LIST_FIXTURE = { items: [JOB_STATE_FIXTURE], total: 1 };
+
+const NODE_FIXTURE = {
+  node_id: "node-01",
+  hostname: "node-01.lan",
+  gpus: [{ name: "NVIDIA GeForce RTX 4090", memory_gb: 24 }],
+  cpus: 16,
+  memory_gb: 64,
+  os: "linux",
+  status: "ONLINE",
+  last_heartbeat: "2026-01-01T00:00:00Z",
+};
+
+const LOGS_FIXTURE = ["line one", "line two", "line three"];
+
+const METRICS_FIXTURE = {
+  job_id: "job-1",
+  gpu_metrics: [
+    {
+      timestamp: "2026-01-01T00:00:00Z",
+      gpu_index: 0,
+      memory_used_mb: 1024,
+      memory_total_mb: 24576,
+      utilization_percent: 55,
+      temperature_c: 61,
+    },
+  ],
+  cpu_metrics: [
+    {
+      timestamp: "2026-01-01T00:00:00Z",
+      cpu_percent: 12.5,
+      memory_percent: 40,
+      temperature_c: 48,
+      memory_used_gb: 25.6,
+    },
+  ],
+  summary: {
+    gpu_memory_min_mb: 1024,
+    gpu_memory_max_mb: 2048,
+    gpu_memory_avg_mb: 1536,
+    gpu_util_min: 10,
+    gpu_util_max: 90,
+    gpu_util_avg: 50,
+    cpu_avg_percent: 12.5,
+  },
+};
+
 describe("Services Layer Integration Tests", () => {
   beforeAll(() => {
     if (typeof window !== "undefined") {
       localStorage.clear();
     }
-    resetBackendReachabilityCache();
+    resetServiceCache();
   });
 
   afterAll(() => {
     if (typeof window !== "undefined") {
       localStorage.clear();
     }
-    resetBackendReachabilityCache();
+    resetServiceCache();
   });
 
   describe("Mock Service", () => {
@@ -99,138 +250,141 @@ describe("Services Layer Integration Tests", () => {
     });
   });
 
-  describe("HTTP Service (requires backend)", () => {
-    const BACKEND_URL = "http://localhost:8000/api/v1";
-    let backendAvailable = false;
-
-    beforeAll(async () => {
+  describe("HTTP Service (stubbed transport, no backend required)", () => {
+    beforeAll(() => {
       setSettings({ apiBaseUrl: BACKEND_URL, token: "localhost-no-auth" });
+    });
 
-      try {
-        const res = await fetch(`${BACKEND_URL}/health`, {
-          headers: { Authorization: "Bearer localhost-no-auth" },
-        });
-        backendAvailable = res.ok;
-        if (!backendAvailable) {
-          console.warn("Backend not reachable, skipping HTTP service tests");
-        }
-      } catch {
-        console.warn("Backend not reachable, skipping HTTP service tests");
-      }
+    // `vi.unstubAllGlobals()` is explicit because `restoreMocks` in
+    // vitest.config.ts restores spies, not globals installed by stubGlobal.
+    afterEach(() => {
+      vi.unstubAllGlobals();
     });
 
     test("should check backend health", async () => {
-      if (!backendAvailable) return;
+      const { calls } = stubFetch({ "GET /health": { body: HEALTH_FIXTURE } });
 
       const res = await fetch(`${BACKEND_URL}/health`, {
         headers: { Authorization: "Bearer localhost-no-auth" },
       });
       expect(res.ok).toBe(true);
 
+      // The fixture reports one registered node, which is what the backend uses
+      // to report "healthy". This used to read a live cluster and so failed with
+      // `expected 'degraded' to be 'healthy'` on any machine whose cluster had
+      // no nodes registered yet — and reported a green PASS asserting nothing at
+      // all when nothing was listening on :8000.
       const health = await res.json();
       expect(health.status).toBe("healthy");
+      expect(health.store).toEqual({ status: "healthy", nodes: 1, jobs: 1 });
+      expect(health.database.status).toBe("healthy");
+
+      expect(calls).toHaveLength(1);
+      expect(calls[0].url).toBe(`${BACKEND_URL}/health`);
     });
 
     test("should list jobs from backend", async () => {
-      if (!backendAvailable) return;
+      const { fetchMock } = stubFetch({ "GET /jobs": { body: JOB_LIST_FIXTURE } });
 
       const result = await httpService.listJobs({});
-      expect(result.items).toBeDefined();
-      expect(Array.isArray(result.items)).toBe(true);
-      expect(result.total).toBeDefined();
+
+      expect(result.items).toHaveLength(1);
+      expect(result.total).toBe(1);
+      expect(result.items[0].job_id).toBe("job-1");
+      expect(result.items[0].status).toBe("PENDING");
+
+      // The query string is built by `query()` in http.ts; assert it is on the
+      // wire rather than only that the response parsed.
+      expect(fetchMock).toHaveBeenCalledOnce();
+      expect(fetchMock.mock.calls[0][0]).toBe(`${BACKEND_URL}/jobs?limit=10&offset=0`);
     });
 
     test("should create and get a job from backend", async () => {
-      if (!backendAvailable) return;
+      const { fetchMock } = stubFetch({
+        "POST /jobs": {
+          // Echo the posted spec back, so the assertions below compare the
+          // request body against the response instead of two unrelated objects.
+          body: (req) => ({ ...JOB_STATE_FIXTURE, spec: JSON.parse(String(req.init?.body)) }),
+        },
+        "GET /jobs/job-1": { body: JOB_STATE_FIXTURE },
+      });
 
-      try {
-        const created = await httpService.createJob(TEST_JOB_SPEC as JobSpec);
-        expect(created.job_id).toMatch(/^job-\d+$/);
-        expect(created.spec.name).toBe(TEST_JOB_SPEC.name);
-        expect(created.status).toBe("PENDING");
+      const created = await httpService.createJob(TEST_JOB_SPEC as JobSpec);
 
-        const retrieved = await httpService.getJob(created.job_id);
-        expect(retrieved.job_id).toBe(created.job_id);
-        expect(retrieved.spec.name).toBe(TEST_JOB_SPEC.name);
-      } catch (error) {
-        // If create fails due to validation or CORS, skip gracefully
-        console.warn("Create job test skipped due to:", error);
-      }
+      expect(created.job_id).toMatch(/^job-\d+$/);
+      expect(created.status).toBe("PENDING");
+      expect(created.spec).toEqual(TEST_JOB_SPEC);
+
+      const retrieved = await httpService.getJob(created.job_id);
+      expect(retrieved.job_id).toBe(created.job_id);
+      expect(retrieved.spec.name).toBe(TEST_JOB_SPEC.name);
+
+      const [createCall, getCall] = fetchMock.mock.calls;
+      expect(createCall?.[0]).toBe(`${BACKEND_URL}/jobs`);
+      expect(createCall?.[1]).toMatchObject({ method: "POST" });
+      expect(getCall?.[0]).toBe(`${BACKEND_URL}/jobs/${created.job_id}`);
+      expect(getCall?.[1]?.method).toBeUndefined();
     });
 
     test("should list nodes from backend", async () => {
-      if (!backendAvailable) return;
+      const { fetchMock } = stubFetch({ "GET /nodes": { body: [NODE_FIXTURE] } });
 
       const nodes = await httpService.listNodes();
-      expect(nodes).toBeDefined();
-      expect(Array.isArray(nodes)).toBe(true);
-      expect(nodes.length).toBeGreaterThan(0);
+
+      // Previously `expect(nodes.length).toBeGreaterThan(0)` against the live
+      // cluster, which failed with `expected 0 to be greater than 0` on an empty
+      // one. The count now comes from the fixture.
+      expect(nodes).toHaveLength(1);
+      expect(nodes[0].node_id).toBe("node-01");
+      expect(nodes[0].status).toBe("ONLINE");
+      expect(nodes[0].gpus[0].name).toBe("NVIDIA GeForce RTX 4090");
+      expect(fetchMock).toHaveBeenCalledOnce();
+      expect(fetchMock.mock.calls[0][0]).toBe(`${BACKEND_URL}/nodes`);
     });
 
     test("should get job logs from backend", async () => {
-      if (!backendAvailable) return;
+      const { fetchMock } = stubFetch({
+        "GET /jobs/job-1/logs/history": { body: LOGS_FIXTURE },
+      });
 
-      const result = await httpService.listJobs({});
-      if (result.items.length > 0) {
-        const jobId = result.items[0].job_id;
-        const logs = await httpService.getJobLogs(jobId);
-        expect(Array.isArray(logs)).toBe(true);
-      }
+      const logs = await httpService.getJobLogs("job-1");
+
+      expect(logs).toEqual(["line one", "line two", "line three"]);
+      expect(fetchMock.mock.calls[0][0]).toBe(`${BACKEND_URL}/jobs/job-1/logs/history`);
     });
 
     test("should get job metrics from backend", async () => {
-      if (!backendAvailable) return;
+      const { fetchMock } = stubFetch({
+        "GET /jobs/job-1/metrics": { body: METRICS_FIXTURE },
+      });
 
-      const result = await httpService.listJobs({});
-      if (result.items.length > 0) {
-        const jobId = result.items[0].job_id;
-        const metrics = await httpService.getJobMetrics(jobId);
-        expect(metrics.job_id).toBe(jobId);
-        expect(metrics.gpu_metrics).toBeDefined();
-        expect(metrics.cpu_metrics).toBeDefined();
-      }
+      const metrics = await httpService.getJobMetrics("job-1");
+
+      expect(metrics.job_id).toBe("job-1");
+      expect(metrics.gpu_metrics).toHaveLength(1);
+      expect(metrics.cpu_metrics).toHaveLength(1);
+      expect(metrics.summary).toEqual(METRICS_FIXTURE.summary);
+      expect(fetchMock.mock.calls[0][0]).toBe(`${BACKEND_URL}/jobs/job-1/metrics`);
     });
 
     test("should validate token with backend", async () => {
-      if (!backendAvailable) return;
+      const { calls } = stubFetch({ "GET /auth/verify": { status: 200, body: {} } });
 
       const valid = await httpService.validateToken("localhost-no-auth");
+
       expect(valid).toBe(true);
+      expect(calls).toHaveLength(1);
+      expect(calls[0].url).toBe(`${BACKEND_URL}/auth/verify`);
+      // validateToken bypasses request(), so the bearer header is asserted here.
+      expect(calls[0].init?.headers).toEqual({ Authorization: "Bearer localhost-no-auth" });
     });
   });
 
-  describe("Auto-detection Logic", () => {
-    test("should use mock when backend unreachable", async () => {
-      setSettings({ apiBaseUrl: "http://unreachable:9999/api/v1", token: "test" });
-      resetBackendReachabilityCache();
-
-      const { getClusterAsync } = await import("../../src/services");
-      const service = await getClusterAsync();
-      expect(["mock", "http"]).toContain(service.kind);
-    });
-
-    test("should use HTTP when VITE_CLUSTER_BACKEND=http", async () => {
-      vi.stubEnv("VITE_CLUSTER_BACKEND", "http");
-      resetBackendReachabilityCache();
-
-      const { getClusterAsync } = await import("../../src/services");
-      const service = await getClusterAsync();
-
-      expect(service.kind).toBe("http");
-      vi.unstubAllEnvs();
-    });
-
-    test("should use HTTP when localStorage forceHttpBackend=true", async () => {
-      localStorage.setItem("shc.forceHttpBackend", "true");
-      resetBackendReachabilityCache();
-
-      const { getClusterAsync } = await import("../../src/services");
-      const service = await getClusterAsync();
-
-      expect(service.kind).toBe("http");
-      localStorage.removeItem("shc.forceHttpBackend");
-    });
-  });
+  // The "Auto-detection Logic" block that used to live here was vacuous: it
+  // asserted `expect(["mock", "http"]).toContain(service.kind)`, which passes
+  // for either implementation, and drove a localStorage override flag that no
+  // longer exists. The real matrix now lives in src/services/index.test.ts,
+  // where the module-scope env read can be re-loaded per case.
 
   describe("Service Interface Consistency", () => {
     test("mock and http services have same interface", () => {

@@ -45,10 +45,10 @@ export default defineConfig({
           reuseExistingServer: true,
           timeout: 120000,
           cwd: path.resolve(__dirname),
-          env: {
-            VITE_CLUSTER_BACKEND: "http",
-            VITE_API_URL: "http://localhost:8000/api/v1",
-          },
+          // No VITE_* here on purpose: `npm run dev` is mode `development`, so
+          // the mode and the API base URL come from the committed
+          // .env.development. A fourth place that decides which ClusterService
+          // runs would be exactly the drift this file had.
         },
       ]
     : undefined,

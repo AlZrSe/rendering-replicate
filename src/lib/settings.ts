@@ -10,9 +10,18 @@ export interface Settings {
 
 const KEY = "shc.settings";
 
+/**
+ * Build-time default for the backend base URL, from `VITE_API_URL` (see
+ * `.env.development` / `.env.production`). It only supplies the *default*:
+ * anything persisted in `localStorage["shc.settings"]` still wins, so the
+ * Settings page and the login screen can retarget a running build at another
+ * backend without a rebuild.
+ */
+const envApiBaseUrl = (import.meta.env["VITE_API_URL"] as string | undefined)?.trim();
+
 export const defaultSettings: Settings = {
   token: "",
-  apiBaseUrl: "http://localhost:8000/api/v1",
+  apiBaseUrl: envApiBaseUrl || "http://localhost:8000/api/v1",
   theme: "dark",
   wsReconnectMs: 3000,
   pollIntervalMs: 7000,

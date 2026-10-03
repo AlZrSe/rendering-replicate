@@ -13,7 +13,8 @@
 - [x] Software profiles (VASP, LAMMPS, RMCProfile, GROMACS, QE, CP2K, PyTorch) with create/edit page and job-form prefill
 
 - [x] Single services layer (src/services) with mock + HTTP implementations of one ClusterService contract
+- [x] Explicit `VITE_CLUSTER_BACKEND=mock` opt-in, no reachability probe, no implicit mock fallback
 
 ## Later (needs the real backend)
-- Switch VITE_CLUSTER_BACKEND=http and verify src/services/http.ts against the FastAPI routes
+- Verify src/services/http.ts against the FastAPI routes end-to-end in CI (the Playwright suite is the contract check)
 - Date-range filter on the jobs list

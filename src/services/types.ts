@@ -63,6 +63,14 @@ export interface ClusterService {
 }
 
 export class ServiceError extends Error {
+  /**
+   * The HTTP status from the backend, or `0` when no HTTP response was
+   * produced at all — a network failure, a wrong base URL, a CORS rejection
+   * (see `unreachable()` in ./http.ts). `0` is deliberately below every
+   * branch in `useErrorHandler`, so an unreachable backend lands in the
+   * generic handler and its connection-specific `error_code` message, rather
+   * than being mistaken for a rejected request.
+   */
   status: number;
   error_code?: string;
   title?: string;

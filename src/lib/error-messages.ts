@@ -10,6 +10,13 @@ export interface UserFriendlyError {
 }
 
 const ERROR_MESSAGES: Record<string, UserFriendlyError | undefined> = {
+  // Connectivity errors — no HTTP response was produced (ServiceError.status === 0)
+  BACKEND_UNREACHABLE: {
+    message: "Cannot reach the cluster backend",
+    suggestion:
+      "The request never reached the server. Check that the backend is running and that the API base URL on the settings page is correct.",
+  },
+
   // Auth errors
   AUTH_TOKEN_MISSING: {
     message: "Authentication required",

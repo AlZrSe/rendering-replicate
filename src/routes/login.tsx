@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { validateToken } from "@/services";
+import { validateToken, ServiceError } from "@/services";
 import { getSettings, setSettings } from "@/lib/settings";
 
 export const Route = createFileRoute("/login")({
@@ -51,6 +51,19 @@ function LoginPage() {
       setSettings({ token: token.trim(), apiBaseUrl: apiUrl.trim() });
       toast.success("Connected to cluster");
       navigate({ to: "/" });
+    } catch (error) {
+      // validateToken throws when the backend cannot be reached. That is a
+      // connection problem, not a token problem, and saying so is the whole
+      // point — before this the form blamed the token for a dead backend.
+      if (error instanceof ServiceError && error.error_code === "BACKEND_UNREACHABLE") {
+        toast.error("Cannot reach the cluster backend", {
+          description: `Nothing answered at ${apiUrl.trim() || "the configured API URL"}.`,
+        });
+      } else {
+        toast.error("Could not validate the token", {
+          description: "Check the API base URL and try again.",
+        });
+      }
     } finally {
       setBusy(false);
     }
@@ -109,8 +122,8 @@ function LoginPage() {
             {busy ? "Validating…" : "Connect"}
           </Button>
           <p className="text-center text-xs text-muted-foreground">
-            The backend isn't live yet, so this dashboard runs on realistic mock data. Any token of
-            8+ characters works.
+            Authorisation is skipped on localhost. On any other host, enter the cluster&apos;s
+            shared bearer token.
           </p>
         </div>
       </form>
