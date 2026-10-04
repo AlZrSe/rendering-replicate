@@ -1,7 +1,15 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Inbox, Plus, RefreshCw, Search } from "lucide-react";
+import {
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  Inbox,
+  Plus,
+  RefreshCw,
+  Search,
+} from "lucide-react";
 import { Shell } from "@/components/layout/Shell";
 import { StatusBadge } from "@/components/StatusBadge";
 import { MetricCard } from "@/components/MetricCard";
@@ -18,6 +26,14 @@ import {
 } from "@/components/ui/select";
 import { listJobs, listNodes } from "@/services";
 import { fmtAgo, fmtDuration } from "@/lib/format";
+import {
+  dashboardCounters,
+  jobsErrorCopy,
+  listPanelState,
+  nodeFilterOptions,
+  nodesOnlineValue,
+  paginationLabel,
+} from "@/lib/jobs-dashboard";
 import { useSettings } from "@/lib/settings";
 import type { JobStatus } from "@/lib/types";
 
@@ -69,20 +85,43 @@ function JobsPage() {
     refetchInterval: settings.pollIntervalMs,
   });
 
-  const stats = useMemo(() => {
-    const items = allJobs.data?.items ?? [];
-    const count = (s: JobStatus) => items.filter((j) => j.status === s).length;
-    return {
-      running: count("RUNNING"),
-      pending: count("PENDING"),
-      failed: count("FAILED"),
-      online: (nodesQuery.data ?? []).filter((n) => n.status === "ONLINE").length,
-      nodes: (nodesQuery.data ?? []).length,
-    };
-  }, [allJobs.data, nodesQuery.data]);
+  // Every "what do I draw" decision on this page lives in `@/lib/jobs-dashboard` as a
+  // pure function (issue #42). This block is the wiring; the decisions themselves are
+  // unit-tested in `src/lib/jobs-dashboard.test.ts`, which is the only way to check
+  // them here — there is no component-test renderer in this repository.
+  //
+  // `listPanelState` is what orders `isError` ahead of the zero test. Inlined, the
+  // `(data?.items.length ?? 0) === 0` form read `true` for a failed query and this
+  // page reported a cluster it had never reached as empty, with four zeroed cards.
+  const panelState = listPanelState(jobsQuery);
+  const counters = useMemo(
+    () =>
+      dashboardCounters(
+        { isError: allJobs.isError, data: allJobs.data?.items },
+        { isError: nodesQuery.isError, data: nodesQuery.data },
+      ),
+    [allJobs.isError, allJobs.data, nodesQuery.isError, nodesQuery.data],
+  );
+  const nodeOptions = nodeFilterOptions({
+    isError: nodesQuery.isError,
+    data: nodesQuery.data,
+  });
+  const errorCopy = jobsErrorCopy(jobsQuery.error);
 
   const total = jobsQuery.data?.total ?? 0;
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const refreshing = jobsQuery.isFetching || allJobs.isFetching || nodesQuery.isFetching;
+
+  // AC-4: one click must repair everything this page shows. It used to refetch only
+  // `jobsQuery`, so the table recovered while the stat cards and the node filter kept
+  // their old — or zeroed — values until the next poll tick, leaving the page
+  // describing three different moments at once. The Retry button in the error branch
+  // reuses this rather than adding a second, narrower path.
+  const refreshAll = () => {
+    void jobsQuery.refetch();
+    void allJobs.refetch();
+    void nodesQuery.refetch();
+  };
 
   return (
     <Shell
@@ -90,8 +129,8 @@ function JobsPage() {
       subtitle="cluster workload overview"
       actions={
         <>
-          <Button variant="outline" size="sm" onClick={() => jobsQuery.refetch()}>
-            <RefreshCw className={jobsQuery.isFetching ? "size-4 animate-spin" : "size-4"} />
+          <Button variant="outline" size="sm" onClick={refreshAll}>
+            <RefreshCw className={refreshing ? "size-4 animate-spin" : "size-4"} />
             Refresh
           </Button>
           <Button size="sm" asChild>
@@ -103,12 +142,12 @@ function JobsPage() {
       }
     >
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <MetricCard label="Running" value={stats.running} tone="info" hint="active workloads" />
-        <MetricCard label="Queued" value={stats.pending} hint="waiting for a node" />
-        <MetricCard label="Failed" value={stats.failed} tone="danger" hint="need attention" />
+        <MetricCard label="Running" value={counters.running} tone="info" hint="active workloads" />
+        <MetricCard label="Queued" value={counters.pending} hint="waiting for a node" />
+        <MetricCard label="Failed" value={counters.failed} tone="danger" hint="need attention" />
         <MetricCard
           label="Nodes online"
-          value={`${stats.online}/${stats.nodes}`}
+          value={nodesOnlineValue(counters.online, counters.nodes)}
           tone="success"
           hint="heartbeat within 90s"
         />
@@ -159,22 +198,38 @@ function JobsPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">All nodes</SelectItem>
-              {(nodesQuery.data ?? []).map((n) => (
-                <SelectItem key={n.node_id} value={n.node_id}>
-                  {n.node_id}
+              {nodeOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value} disabled={option.disabled}>
+                  {option.label}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
 
-        {jobsQuery.isPending ? (
+        {panelState === "pending" ? (
           <div className="space-y-3 p-4">
             {Array.from({ length: 5 }).map((_, i) => (
               <Skeleton key={i} className="h-12 w-full" />
             ))}
           </div>
-        ) : (jobsQuery.data?.items.length ?? 0) === 0 ? (
+        ) : panelState === "error" ? (
+          // AC-5: this branch is a render output, not a side effect. `/nodes` and
+          // `/jobs/$jobId` both invoke the error-notification hook from their component
+          // bodies and therefore re-notify on every render; that is the pattern this
+          // route must not copy. This route raises no notification at all, deliberately:
+          // `jobsQuery` and `allJobs` poll every 7s, so one would repeat for as long as
+          // the backend is down, and the de-duplicating helper that could prevent that is
+          // out of scope for this issue. The Retry button below is the recovery affordance.
+          <div className="space-y-4 p-8 text-center">
+            <AlertCircle className="mx-auto size-12 text-destructive" />
+            <h3 className="text-lg font-semibold">{errorCopy.title}</h3>
+            <p className="text-sm text-muted-foreground">{errorCopy.description}</p>
+            <Button variant="outline" onClick={refreshAll}>
+              <RefreshCw className={refreshing ? "size-4 animate-spin" : "size-4"} /> Retry
+            </Button>
+          </div>
+        ) : panelState === "empty" ? (
           <EmptyState
             icon={<Inbox className="size-6" />}
             title="No jobs match these filters"
@@ -240,8 +295,7 @@ function JobsPage() {
 
         <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
           <span className="font-mono">
-            {total === 0 ? "0" : page * PAGE_SIZE + 1}–{Math.min(total, (page + 1) * PAGE_SIZE)} of{" "}
-            {total}
+            {paginationLabel({ page, pageSize: PAGE_SIZE, total, failed: jobsQuery.isError })}
           </span>
           <div className="flex gap-2">
             <Button
