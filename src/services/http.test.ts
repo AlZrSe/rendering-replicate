@@ -53,17 +53,18 @@ describe("httpService network failures", () => {
       () => httpService.getNodeMetrics("node-01"),
       () => httpService.getJob("job-1"),
       () =>
+        // The nested shape is `JobSpec` as `src/lib/types.ts` declares it (and as
+        // `openapi.yaml` documents it): resources/paths/retry, not the flat
+        // `{ gpus, cpus, ... }` of `Profile`. The spec is never inspected here —
+        // `fetch` is stubbed to reject — only serialised, so this case is about
+        // `createJob` normalising, not about which fields the job asks for.
         httpService.createJob({
           name: "x",
           command: "echo",
           working_dir: "/tmp",
-          gpus: 0,
-          cpus: 1,
-          memory_gb: 1,
-          vram_gb: 0,
           env: {},
-          input: "in",
-          output: "out",
+          resources: { gpus: 0, cpus: 1, memory_gb: 1, vram_gb: 0 },
+          paths: { input: "in", output: "out" },
         }),
       () => httpService.retryJob("job-1"),
       () => httpService.cancelJob("job-1"),

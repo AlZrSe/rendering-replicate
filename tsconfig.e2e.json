@@ -1,0 +1,39 @@
+{
+  // The Playwright program, deliberately separate from tsconfig.json.
+  //
+  // `npm run typecheck` does NOT check this project. Playwright drives the app
+  // in Node against a live backend; the main program is the jsdom/vitest one.
+  // Merging the two would mean reconciling their `lib`/`types` setups to fix
+  // nothing, and it would reverse the recorded decision (issue #30, Q3) that
+  // the two runners own disjoint file sets.
+  //
+  // This file exists so the boundary is a config file rather than a comment, so
+  // the 8 known errors in `tests/e2e/**` have a command to shrink against:
+  //
+  //     npm run typecheck:e2e
+  //
+  // It reports 8 errors today (7 x TS2345 in job-lifecycle.spec.ts, 1 x TS7006
+  // in node-monitoring.spec.ts). Issue #39 scoped itself to the main program and
+  // declined them; they are tracked in issue #46.
+  // `npm run typecheck:e2e` prints every one of them with its file:line and
+  // **exits 0** — it is an advisory report, not a gate, because a permanently
+  // red npm target gets routed around rather than fixed
+  // (scripts/typecheck-e2e.mjs). Update the count above in the same commit as
+  // any change to it.
+  //
+  // What that exit code does NOT change: `npm run typecheck` still does not check
+  // `tests/e2e/**`, so "the typecheck passes" still does not mean "everything is
+  // checked".
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // A Node program. The vitest program pins `types: ["vite/client"]`, which
+    // carries no node globals at all; a Playwright spec that reads `process.env`
+    // would fail without this.
+    "types": ["node"],
+    "noEmit": true
+  },
+  // `tests/e2e/**` only. `playwright.config.ts` is deliberately not pulled in:
+  // it is untouched by issue #39 and carries 4 further errors of its own, so
+  // including it would blur which 8 are the tracked ones.
+  "include": ["tests/e2e/**/*.ts"]
+}

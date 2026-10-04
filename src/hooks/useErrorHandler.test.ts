@@ -69,7 +69,15 @@ function unreachableError(): ServiceError {
   });
 }
 
-/** The first `toast.error(message, options)` call, or a loud failure. */
+/**
+ * The first `toast.error(message, options)` call, or a loud failure.
+ *
+ * `options` is deliberately typed `Record<string, unknown>` rather than a
+ * hand-written option bag: the point of this file is which keys the hook
+ * *attaches*, not their types. Under `noPropertyAccessFromIndexSignature` that
+ * means the keys must be read with `options["description"]` — see the
+ * assertions below.
+ */
 function firstToastCall(): { message: string; options: Record<string, unknown> } {
   const call = vi.mocked(toast.error).mock.calls[0];
   if (!call) throw new Error("toast.error was never called");
@@ -85,13 +93,13 @@ describe("useErrorHandler with ServiceError.status === 0", () => {
 
     // The connection message from the BACKEND_UNREACHABLE map entry...
     expect(message).toBe("Cannot reach the cluster backend");
-    expect(options.description).toContain("backend is running");
+    expect(options["description"]).toContain("backend is running");
     // ...and explicitly not the non-ServiceError fallback, which would mean the
     // hook had stopped recognising the error it was handed.
     expect(message).not.toBe("An unexpected error occurred");
-    expect(options.description).not.toBe("Please try again later or contact support.");
+    expect(options["description"]).not.toBe("Please try again later or contact support.");
     // The raw `detail` ("Failed to fetch") is for logs, not for the user.
-    expect(options.description).not.toContain("Failed to fetch");
+    expect(options["description"]).not.toContain("Failed to fetch");
   });
 
   it("misses the 5xx and 401 branches: no Retry action, no redirect", () => {
@@ -100,7 +108,7 @@ describe("useErrorHandler with ServiceError.status === 0", () => {
     const { options } = firstToastCall();
 
     // `action` is only attached by the `status >= 500` branch.
-    expect(options.action).toBeUndefined();
+    expect(options["action"]).toBeUndefined();
     expect(navigate).not.toHaveBeenCalled();
   });
 });

@@ -1,5 +1,28 @@
 {
-  "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts", "eslint.config.js"],
+  // Program scope (issue #39).
+  //
+  // `src/**/*.ts` already covers the six vitest files under `src/` — that is how
+  // the five live errors in `useErrorHandler.test.ts` and `http.test.ts` were
+  // found. `tests/integration/**` is here because vitest collects
+  // `tests/integration/**/*.test.ts` and no other glob below matched it.
+  //
+  // `tests/e2e/**` is deliberately NOT in this program. Playwright runs it in
+  // Node against a live backend with its own globals, which is not this
+  // program; it has its own in `tsconfig.e2e.json` and is not part of
+  // `npm run typecheck`. See README.md#type-checking.
+  //
+  // `eslint.config.js` is inert: `allowJs` is off, so no `.js` file ever enters
+  // the program. Kept as committed (out of scope), but do not count it as
+  // coverage.
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "tests/integration/**/*.ts",
+    "tests/integration/**/*.tsx",
+    "vitest.config.ts",
+    "vite.config.ts",
+    "eslint.config.js"
+  ],
   "compilerOptions": {
     "target": "ES2022",
     "jsx": "react-jsx",

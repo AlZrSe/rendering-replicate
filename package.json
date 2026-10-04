@@ -8,6 +8,8 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
+    "typecheck": "node scripts/typecheck.mjs",
+    "typecheck:e2e": "node scripts/typecheck-e2e.mjs",
     "lint": "eslint .",
     "format": "prettier --write .",
     "test": "vitest run",

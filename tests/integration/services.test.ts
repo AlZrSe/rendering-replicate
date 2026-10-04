@@ -5,20 +5,37 @@ import { getSettings, setSettings } from "../../src/lib/settings";
 import type { JobSpec } from "../../src/lib/types";
 
 // Test data
-const TEST_JOB_SPEC = {
+//
+// `JobSpec` is the nested shape `src/lib/types.ts` declares (and `openapi.yaml`
+// documents): resources / paths / retry. It is typed here rather than cast at
+// each use site, so a drift between this fixture and the shipped contract is a
+// compile error instead of the `as JobSpec` that used to hide it.
+const TEST_JOB_SPEC: JobSpec = {
   name: "integration-test-job",
   command: 'echo "test" && sleep 1',
   working_dir: "/tmp/test",
-  gpus: 0,
-  cpus: 2,
-  memory_gb: 4,
-  vram_gb: 0,
   env: {},
-  input: "data/in",
-  output: "data/out",
-  max_retries: 1,
-  retry_delay_seconds: 30,
+  resources: { gpus: 0, cpus: 2, memory_gb: 4, vram_gb: 0 },
+  paths: { input: "data/in", output: "data/out" },
+  retry: { max_retries: 1, retry_delay_seconds: 30 },
 };
+
+/**
+ * The first element of `items`, or a loud failure naming what was empty.
+ *
+ * `noUncheckedIndexedAccess` makes `items[0]` a `T | undefined`. Every site
+ * below reaches for a head element that the surrounding case has already
+ * established exists, so this throws a readable message instead of letting
+ * `.property` raise `Cannot read properties of undefined` — and instead of
+ * silencing it with `!`, which would turn a real empty page into a confusing
+ * crash several frames away. The assertions around it are unchanged: a case
+ * whose array came back empty still fails.
+ */
+function first<T>(items: readonly T[], what: string): T {
+  const [head] = items;
+  if (head === undefined) throw new Error(`expected ${what} to be non-empty`);
+  return head;
+}
 
 // ---------------------------------------------------------------------------
 // Fixtures for the "stubbed transport" block below.
@@ -42,7 +59,14 @@ interface RecordedRequest {
 
 interface StubRoute {
   status?: number;
-  /** A literal body, or a function of the request for round-trip assertions. */
+  /**
+   * A literal body, or a function of the request for round-trip assertions.
+   *
+   * `unknown`, not a union with a callback type, so a fixture may hand back any
+   * JSON shape the backend documents. A function-valued fixture therefore gets
+   * no contextual parameter type and has to annotate it — the request shape is
+   * `RecordedRequest`, the same one `stubFetch` records into `calls`.
+   */
   body: unknown;
 }
 
@@ -193,7 +217,7 @@ describe("Services Layer Integration Tests", () => {
     });
 
     test("should create and get a job", async () => {
-      const created = await mockService.createJob(TEST_JOB_SPEC as JobSpec);
+      const created = await mockService.createJob(TEST_JOB_SPEC);
       expect(created.job_id).toMatch(/^job-\d+$/);
       expect(created.spec.name).toBe(TEST_JOB_SPEC.name);
       expect(created.status).toBe("PENDING");
@@ -210,7 +234,7 @@ describe("Services Layer Integration Tests", () => {
 
     test("should get job logs", async () => {
       const result = await mockService.listJobs({});
-      const jobId = result.items[0].job_id;
+      const jobId = first(result.items, "mock job list").job_id;
       const logs = await mockService.getJobLogs(jobId);
       expect(Array.isArray(logs)).toBe(true);
       expect(logs.length).toBeGreaterThan(0);
@@ -218,7 +242,7 @@ describe("Services Layer Integration Tests", () => {
 
     test("should get job metrics", async () => {
       const result = await mockService.listJobs({});
-      const jobId = result.items[0].job_id;
+      const jobId = first(result.items, "mock job list").job_id;
       const metrics = await mockService.getJobMetrics(jobId);
       expect(metrics.job_id).toBe(jobId);
       expect(metrics.gpu_metrics).toBeDefined();
@@ -227,7 +251,7 @@ describe("Services Layer Integration Tests", () => {
     });
 
     test("should retry a failed job", async () => {
-      const created = await mockService.createJob(TEST_JOB_SPEC as JobSpec);
+      const created = await mockService.createJob(TEST_JOB_SPEC);
       const retried = await mockService.retryJob(created.job_id);
       expect(retried.status).toBe("PENDING");
       expect(retried.retry_count).toBe(1);
@@ -235,7 +259,7 @@ describe("Services Layer Integration Tests", () => {
     });
 
     test("should cancel a running job", async () => {
-      const created = await mockService.createJob(TEST_JOB_SPEC as JobSpec);
+      const created = await mockService.createJob(TEST_JOB_SPEC);
       const cancelled = await mockService.cancelJob(created.job_id);
       expect(cancelled.status).toBe("CANCELLED");
       expect(cancelled.completed_at).toBeDefined();
@@ -280,7 +304,7 @@ describe("Services Layer Integration Tests", () => {
       expect(health.database.status).toBe("healthy");
 
       expect(calls).toHaveLength(1);
-      expect(calls[0].url).toBe(`${BACKEND_URL}/health`);
+      expect(first(calls, "health fetch calls").url).toBe(`${BACKEND_URL}/health`);
     });
 
     test("should list jobs from backend", async () => {
@@ -290,13 +314,15 @@ describe("Services Layer Integration Tests", () => {
 
       expect(result.items).toHaveLength(1);
       expect(result.total).toBe(1);
-      expect(result.items[0].job_id).toBe("job-1");
-      expect(result.items[0].status).toBe("PENDING");
+      const job = first(result.items, "job list from /jobs");
+      expect(job.job_id).toBe("job-1");
+      expect(job.status).toBe("PENDING");
 
       // The query string is built by `query()` in http.ts; assert it is on the
       // wire rather than only that the response parsed.
       expect(fetchMock).toHaveBeenCalledOnce();
-      expect(fetchMock.mock.calls[0][0]).toBe(`${BACKEND_URL}/jobs?limit=10&offset=0`);
+      const [listUrl] = first(fetchMock.mock.calls, "listJobs fetch call");
+      expect(listUrl).toBe(`${BACKEND_URL}/jobs?limit=10&offset=0`);
     });
 
     test("should create and get a job from backend", async () => {
@@ -304,12 +330,15 @@ describe("Services Layer Integration Tests", () => {
         "POST /jobs": {
           // Echo the posted spec back, so the assertions below compare the
           // request body against the response instead of two unrelated objects.
-          body: (req) => ({ ...JOB_STATE_FIXTURE, spec: JSON.parse(String(req.init?.body)) }),
+          body: (req: RecordedRequest) => ({
+            ...JOB_STATE_FIXTURE,
+            spec: JSON.parse(String(req.init?.body)),
+          }),
         },
         "GET /jobs/job-1": { body: JOB_STATE_FIXTURE },
       });
 
-      const created = await httpService.createJob(TEST_JOB_SPEC as JobSpec);
+      const created = await httpService.createJob(TEST_JOB_SPEC);
 
       expect(created.job_id).toMatch(/^job-\d+$/);
       expect(created.status).toBe("PENDING");
@@ -335,11 +364,13 @@ describe("Services Layer Integration Tests", () => {
       // cluster, which failed with `expected 0 to be greater than 0` on an empty
       // one. The count now comes from the fixture.
       expect(nodes).toHaveLength(1);
-      expect(nodes[0].node_id).toBe("node-01");
-      expect(nodes[0].status).toBe("ONLINE");
-      expect(nodes[0].gpus[0].name).toBe("NVIDIA GeForce RTX 4090");
+      const node = first(nodes, "node list from /nodes");
+      expect(node.node_id).toBe("node-01");
+      expect(node.status).toBe("ONLINE");
+      expect(first(node.gpus, `gpu list of ${node.node_id}`).name).toBe("NVIDIA GeForce RTX 4090");
       expect(fetchMock).toHaveBeenCalledOnce();
-      expect(fetchMock.mock.calls[0][0]).toBe(`${BACKEND_URL}/nodes`);
+      const [listNodesUrl] = first(fetchMock.mock.calls, "listNodes fetch call");
+      expect(listNodesUrl).toBe(`${BACKEND_URL}/nodes`);
     });
 
     test("should get job logs from backend", async () => {
@@ -350,7 +381,8 @@ describe("Services Layer Integration Tests", () => {
       const logs = await httpService.getJobLogs("job-1");
 
       expect(logs).toEqual(["line one", "line two", "line three"]);
-      expect(fetchMock.mock.calls[0][0]).toBe(`${BACKEND_URL}/jobs/job-1/logs/history`);
+      const [logsUrl] = first(fetchMock.mock.calls, "getJobLogs fetch call");
+      expect(logsUrl).toBe(`${BACKEND_URL}/jobs/job-1/logs/history`);
     });
 
     test("should get job metrics from backend", async () => {
@@ -364,7 +396,8 @@ describe("Services Layer Integration Tests", () => {
       expect(metrics.gpu_metrics).toHaveLength(1);
       expect(metrics.cpu_metrics).toHaveLength(1);
       expect(metrics.summary).toEqual(METRICS_FIXTURE.summary);
-      expect(fetchMock.mock.calls[0][0]).toBe(`${BACKEND_URL}/jobs/job-1/metrics`);
+      const [metricsUrl] = first(fetchMock.mock.calls, "getJobMetrics fetch call");
+      expect(metricsUrl).toBe(`${BACKEND_URL}/jobs/job-1/metrics`);
     });
 
     test("should validate token with backend", async () => {
@@ -374,9 +407,10 @@ describe("Services Layer Integration Tests", () => {
 
       expect(valid).toBe(true);
       expect(calls).toHaveLength(1);
-      expect(calls[0].url).toBe(`${BACKEND_URL}/auth/verify`);
+      const verifyCall = first(calls, "validateToken fetch call");
+      expect(verifyCall.url).toBe(`${BACKEND_URL}/auth/verify`);
       // validateToken bypasses request(), so the bearer header is asserted here.
-      expect(calls[0].init?.headers).toEqual({ Authorization: "Bearer localhost-no-auth" });
+      expect(verifyCall.init?.headers).toEqual({ Authorization: "Bearer localhost-no-auth" });
     });
   });
 
@@ -399,7 +433,7 @@ describe("Services Layer Integration Tests", () => {
     });
 
     test("both services return compatible JobState", async () => {
-      const mockJob = await mockService.createJob(TEST_JOB_SPEC as JobSpec);
+      const mockJob = await mockService.createJob(TEST_JOB_SPEC);
       expect(mockJob).toHaveProperty("job_id");
       expect(mockJob).toHaveProperty("spec");
       expect(mockJob).toHaveProperty("status");

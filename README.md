@@ -132,6 +132,7 @@ requirements. They are never mixed.
 | File locations | `src/**/*.test.ts`, `tests/integration/**/*.test.ts` | `tests/e2e/**/*.spec.ts` |
 | Needs a backend | No | Yes — a live backend and dev server |
 | Browser required | No (jsdom) | Yes (Chromium) |
+| Type-checked by `npm run typecheck` | Yes | **No** — see [Type checking](#type-checking) |
 
 `npm test` runs the vitest unit and integration suites in jsdom. It needs neither a running
 backend nor a dev server: `.env.test` selects the mock, deliberately. `npm run test:e2e` runs the
@@ -140,6 +141,92 @@ Playwright suite in a real browser and needs both a live backend and a dev serve
 The two suites cannot collide: vitest collects the `.test.ts` extension under `src/` and
 `tests/integration/` only and explicitly excludes `tests/e2e/**`, while Playwright only owns
 `tests/e2e/` via its `testDir`.
+
+### Type checking
+
+```bash
+npm run typecheck          # the gate: runs `tsc --noEmit -p tsconfig.json`
+npm run typecheck:e2e      # advisory report on tests/e2e/** — prints its 8 known errors, exits 0
+```
+
+`npm run typecheck` runs `tsc --noEmit` over `tsconfig.json` and compares the result against a
+committed inventory, `scripts/typecheck-baseline.json`. Read `scripts/typecheck.mjs` for how the
+comparison works; the short version is that the gate is red if there is any type error outside the
+baseline, **and** red if a baselined error stops being reported.
+
+The baseline holds **1 known production error in `src/`**, and that one is a real bug rather than
+type debt:
+
+| Entry | What it is |
+| --- | --- |
+| `TS2322` at `src/routes/jobs.$jobId.tsx:84` | `src/services/index.ts` declares its `streamJobLogs` wrapper `async`, so it returns `Promise<Unsubscribe>`, while `ClusterService.streamJobLogs` is synchronous. The page stores it in a `(() => void) \| undefined` and calls it from the effect cleanup, so navigating away invokes a Promise and leaks the log WebSocket. |
+
+It is deliberately **not** fixed here: it is a behaviour change that needs its own review, and this
+issue declined it. `scripts/typecheck-baseline.json`'s `$comment` records the same provenance. It is
+tracked in issue #45 — fix that one and the baseline is empty.
+
+**The other 15 entries this file used to hold were one missing line, not 15 small debts.**
+`src/services/types.ts` imported five types from `@/lib/types` and re-exported none of them, so the
+`export type { … } from "@/lib/types"` line that `src/services/index.ts` imports by name did not
+exist. That produced the 5 × `TS2459` at the import site, and — because those five types resolved to
+`any` inside `ClusterService` — it erased the type of every service return value, which is what the
+10 × `TS7006` implicit-`any` callback parameters in the route components were. **No route component
+needed a change**; adding the one re-export removed all fifteen at once. So do not go looking for
+implicit-`any` fixes in `src/routes/*.tsx`: a `TS7006` there means something further down is
+resolving to `any`, and the place to look is the type it cannot see.
+
+Fixing a baselined error means shrinking the baseline in the same commit, and `npm run typecheck`
+stays red until you do. Shrink it from `tsc`'s own output, never by hand — see *Regenerating the
+baseline* in `scripts/typecheck.mjs`.
+
+Test files and config files are **never** baselined. `src/**/*.test.ts` and
+`tests/integration/**/*.test.ts` are genuinely type-clean, so a new type error in a test fails the
+gate outright with the baseline out of the picture.
+
+The gate also asserts the **file set**, not just the errors — a comparison of diagnostics alone
+cannot tell "no errors" from "no longer any files to report errors in". `tsc --listFiles` is checked
+against named anchor files in `scripts/typecheck.mjs` (`REQUIRED_FILES`), plus a sweep of every
+`*.test.ts` on disk under `src/`, `tests/integration/` and `tests/`. So dropping the
+`tests/integration/**` entries from `tsconfig.json`'s `include` fails loudly, naming the file,
+instead of quietly leaving `tests/integration/services.test.ts` unchecked again. The `tests/` root
+is swept past what vitest collects on purpose: a test file there is run by *nothing*, so it is
+named as such — your test never runs — rather than as a `vitest.config.ts` problem. It is keyed on
+names, not counts: adding a test file is an ordinary change and leaves the gate green.
+
+What `npm run typecheck` covers, and what it does not:
+
+| | Covered by `npm run typecheck` |
+| --- | --- |
+| `src/**` production code | Yes, against the 1-entry baseline |
+| `src/**/*.test.ts` (6 vitest files) | Yes, no baseline |
+| `tests/integration/services.test.ts` | Yes, no baseline |
+| `vitest.config.ts`, `vite.config.ts` | Yes, no baseline |
+| **`tests/e2e/**` (7 Playwright files)** | **No** |
+| `playwright.config.ts`, `eslint.config.js` | No |
+
+**"Typecheck passes" does not mean "everything is checked".** `tests/e2e/**` is a separate
+TypeScript program (`tsconfig.e2e.json`) because Playwright runs in Node against a live backend,
+not in the jsdom environment the rest of the suite uses. It carries **8 known errors**
+(7 × `TS2345` in `job-lifecycle.spec.ts`, 1 × `TS7006` in `node-monitoring.spec.ts`) and is
+deliberately *not* part of `npm run typecheck`. Those 8 are known debt, not an accident — but they
+are not fixed here, so the gap is recorded in `tsconfig.e2e.json` and nowhere else.
+
+`npm run typecheck:e2e` is how the gap is measured. It runs the same `tsc --noEmit -p
+tsconfig.e2e.json`, prints all 8 with their `file:line`, and **exits 0**: it is an advisory report,
+not a gate. It used to exit non-zero, permanently, and that was a trap rather than a signal — the
+next person to wire an npm script into CI by muscle memory inherits a red pipeline they did not
+cause, and people route *around* red long before they route around missing, which hides the 8 from
+everyone instead of reminding one person. So the diagnostics are unchanged and only the verdict is
+gone: the count stays reproducible and shrinkable, and `npm run typecheck` stays the gate.
+
+**That exit code does not move the boundary.** `npm run typecheck` still does not check
+`tests/e2e/**`, so "the typecheck passes" still does not mean "everything is checked" — that
+warning is the substantive point of this section and is unaffected by `typecheck:e2e` exiting 0. When
+CI lands it must call the suites as separate jobs — `npm run typecheck` and `npm run test:e2e` — for
+exactly this reason.
+
+`npm run build` is deliberately **not** type-gated: it stays `vite build`, which strips types
+without checking them. Run `npm run typecheck` separately.
 
 ## Pages
 

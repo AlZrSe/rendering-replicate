@@ -1,0 +1,45 @@
+{
+  "$comment": [
+    "Ratchet baseline for `npm run typecheck` (scripts/typecheck.mjs). Read that",
+    "script before editing this file: it is compared as an exact multiset of",
+    "(file, code, message), so it must be shrunk in the same commit that fixes an",
+    "entry, or `npm run typecheck` fails. Production src/ sources only - test",
+    "files and config files are never baselined.",
+    "",
+    "`diagnostics` is generated from tsc 5.9.3's own output, never written by",
+    "hand; see 'Regenerating the baseline' in scripts/typecheck.mjs for the recipe",
+    "and for how to check a regeneration. tsconfig.json as committed by issue #39.",
+    "",
+    "One entry, down from 16 - and the 15 that went were one missing line, not 15",
+    "small debts. src/services/types.ts imported five types from `@/lib/types`",
+    "and re-exported none of them, so the `export type { ... } from \"@/lib/types\"`",
+    "line that src/services/index.ts imports by name did not exist. Without it",
+    "those five types resolved to `any` inside `ClusterService` - hence the 5 x",
+    "TS2459 at the import site - and every service return type was `any`, which is",
+    "what produced the 10 x TS7006 implicit-any callback parameters in the route",
+    "components. Adding the one re-export removed all 15 at once and no route",
+    "component needed a change, so read this before 'fixing' a TS7006 in",
+    "src/routes/: the fix is one line in src/services/types.ts, not in the route.",
+    "",
+    "The entry that remains is a real production bug rather than type debt.",
+    "src/services/index.ts wraps the synchronous `ClusterService.streamJobLogs`",
+    "in an `async` function, so the wrapper hands back `Promise<Unsubscribe>`.",
+    "src/routes/jobs.$jobId.tsx stores that in a `(() => void) | undefined` and",
+    "calls it from the effect cleanup, so leaving the page invokes a Promise and",
+    "leaks the log WebSocket. Fixing it deletes this entry and shrinks the file",
+"to zero. It is deliberately NOT fixed by issue #39: it is a behaviour change",
+"with its own review, not type debt, and #39 declined it on purpose.",
+"It is tracked in issue #45."
+  ],
+  "project": "tsconfig.json",
+  "count": 1,
+  "diagnostics": [
+    {
+      "file": "src/routes/jobs.$jobId.tsx",
+      "line": 84,
+      "column": 9,
+      "code": "TS2322",
+      "message": "Type 'Promise<Unsubscribe>' is not assignable to type '() => void'."
+    }
+  ]
+}

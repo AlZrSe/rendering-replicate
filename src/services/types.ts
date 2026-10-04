@@ -7,6 +7,13 @@ import type {
   NodeSpec,
 } from "@/lib/types";
 
+// `src/services/index.ts` imports these five by name from here, so they have to be
+// re-exported. While they were imported but not re-exported, every one of them
+// resolved to `any` inside `ClusterService`, which silently erased the types of
+// every service return value and cascaded into implicit-`any` callbacks across
+// the route components. See scripts/typecheck-baseline.json.
+export type { JobListResult, JobMetrics, JobSpec, JobState, NodeSpec } from "@/lib/types";
+
 export interface JobQuery {
   status?: JobStatus | "ALL";
   node?: string | "ALL";
