@@ -30,18 +30,38 @@ export const defaultSettings: Settings = {
 let cache: Settings | null = null;
 const listeners = new Set<(s: Settings) => void>();
 
-/** Local cluster or Lovable preview: authorisation is skipped entirely. */
+/**
+ * Hosts on which authorisation is skipped, mirroring the backend's
+ * `is_localhost()` in `backend/core/utils.py`.
+ *
+ * THE TWO LISTS MUST BE CHANGED TOGETHER. `shared/auth/localhost_hosts.json`
+ * holds the entries they share, and `backend/tests/unit/test_frontend_alignment.py`
+ * fails when they drift. This file does not import that JSON at runtime: the
+ * Vite build cannot reach outside this repository, which is why the artifact is
+ * test-enforced rather than import-enforced (see `shared/auth/README.md`).
+ *
+ * `0.0.0.0` (the wildcard bind address) and `testserver` (Starlette
+ * TestClient's default `Host`) are backend-only and deliberately absent: a
+ * browser never reports either, and matching them here would only produce a
+ * spurious login screen.
+ */
+const LOCALHOST_EXACT_HOSTS = ["localhost", "127.0.0.1", "::1"];
+const LOCALHOST_SUFFIXES = [".local", ".lovable.app"];
+
+/**
+ * Local cluster or Lovable preview: authorisation is skipped entirely.
+ *
+ * The hostname is normalised before matching, exactly as the backend does, so
+ * both spellings of IPv6 loopback resolve to the one canonical entry. A browser
+ * reports `"[::1]"` (`new URL("http://[::1]:5173/").hostname`), while Starlette
+ * strips the brackets and hands the backend `"::1"` - so the canonical entries
+ * above are bracket-free and lowercase, and `MyHost.LOCAL` matches too.
+ */
 export function isLocalhost() {
   if (typeof window === "undefined") return false;
-  const h = window.location.hostname;
-  return (
-    h === "localhost" ||
-    h === "127.0.0.1" ||
-    h === "[::1]" ||
-    h.endsWith(".local") ||
-    h.endsWith(".lovable.app") ||
-    h.endsWith(".lovableproject.com")
-  );
+  const raw = window.location.hostname.trim().toLowerCase();
+  const h = raw.startsWith("[") && raw.endsWith("]") ? raw.slice(1, -1) : raw;
+  return LOCALHOST_EXACT_HOSTS.includes(h) || LOCALHOST_SUFFIXES.some((s) => h.endsWith(s));
 }
 
 export const LOCAL_TOKEN = "localhost-no-auth";

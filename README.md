@@ -20,9 +20,28 @@ The dev server listens on **5173**, which is what `playwright.config.ts` targets
 backend's CORS allow-list accepts (`backend/core/config.py`). The port comes from the shared
 `@lovable.dev/vite-tanstack-config` package, not from this repository.
 
-On `localhost` the dashboard **skips authorisation entirely** and opens straight to the jobs
-view. On any other host, the login screen asks for the shared bearer token, which is stored in
+On a **local host** the dashboard **skips authorisation entirely** and opens straight to the jobs
+view; on any other host the login screen asks for the shared bearer token, which is stored in
 `localStorage` together with the API base URL, poll interval, reconnect delay and theme.
+
+A *local host* is one of these, matched after `trim()` + `toLowerCase()` and with one surrounding
+`[ ]` pair stripped from an IPv6 literal:
+
+| | Entries |
+| --- | --- |
+| exact | `localhost`, `127.0.0.1`, `::1` |
+| suffixes (with a leading dot, so `notlocal` does not match) | `.local`, `.lovable.app` |
+
+`isLocalhost()` in `src/lib/settings.ts` mirrors the backend's `is_localhost()` in
+`backend/core/utils.py`, and the two lists **must be changed together**. The entries they share
+are listed in `shared/auth/localhost_hosts.json` in the parent repository;
+`backend/tests/unit/test_frontend_alignment.py` fails if the two drift, and
+`src/lib/settings.test.ts` pins the behaviour in this repository. It is not imported at runtime
+because the Vite build cannot reach outside this repository — see `shared/auth/README.md`.
+
+Two entries are deliberately **backend-only**: `0.0.0.0` (the wildcard bind address) and
+`testserver` (Starlette `TestClient`'s default `Host`). A browser reports neither, so matching
+them here would only produce a spurious login screen.
 
 ## Backend mode: `VITE_CLUSTER_BACKEND`
 

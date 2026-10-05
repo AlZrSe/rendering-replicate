@@ -1,5 +1,14 @@
 import { Page, Locator, expect } from "@playwright/test";
 
+// Issue #31: this suite depends on `localhost` being a bypass host on BOTH
+// sides, so the token below is never actually validated - the backend sees
+// `Host: localhost` from Playwright, `is_localhost()` returns true, and the
+// request proceeds with `{"sub": "localhost_user"}`. Change the token and the
+// suite stops testing the bypass and starts testing token validation.
+//
+// The shared list of bypass hosts is `shared/auth/localhost_hosts.json` in the
+// parent repository (`backend/core/utils.py` and `src/lib/settings.ts` each
+// keep a literal copy of their half of it; issue #31 aligned them).
 export const TEST_TOKEN = "localhost-no-auth";
 export const TEST_API_URL = "http://localhost:8000/api/v1";
 
