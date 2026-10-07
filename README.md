@@ -24,13 +24,13 @@ On a **local host** the dashboard **skips authorisation entirely** and opens str
 view; on any other host the login screen asks for the shared bearer token, which is stored in
 `localStorage` together with the API base URL, poll interval, reconnect delay and theme.
 
-A *local host* is one of these, matched after `trim()` + `toLowerCase()` and with one surrounding
+A _local host_ is one of these, matched after `trim()` + `toLowerCase()` and with one surrounding
 `[ ]` pair stripped from an IPv6 literal:
 
-| | Entries |
-| --- | --- |
-| exact | `localhost`, `127.0.0.1`, `::1` |
-| suffixes (with a leading dot, so `notlocal` does not match) | `.local`, `.lovable.app` |
+|                                                             | Entries                         |
+| ----------------------------------------------------------- | ------------------------------- |
+| exact                                                       | `localhost`, `127.0.0.1`, `::1` |
+| suffixes (with a leading dot, so `notlocal` does not match) | `.local`, `.lovable.app`        |
 
 `isLocalhost()` in `src/lib/settings.ts` mirrors the backend's `is_localhost()` in
 `backend/core/utils.py`, and the two lists **must be changed together**. The entries they share
@@ -48,25 +48,25 @@ them here would only produce a spurious login screen.
 `src/services/index.ts` owns the choice between the two `ClusterService` implementations, and
 that is the **only** place it is made:
 
-| `VITE_CLUSTER_BACKEND` | Implementation | Health probe |
-| --- | --- | --- |
-| exactly `mock` | `src/services/mock.ts` — in-memory demo data | none, ever |
+| `VITE_CLUSTER_BACKEND`         | Implementation                                    | Health probe         |
+| ------------------------------ | ------------------------------------------------- | -------------------- |
+| exactly `mock`                 | `src/services/mock.ts` — in-memory demo data      | none, ever           |
 | anything else, including unset | `src/services/http.ts` — the real FastAPI backend | none, does not exist |
 
 The match on `mock` is exact and case-sensitive. `Mock`, `mockk`, `auto`, `1`, `true`, `""` and
-an absent variable all resolve to `httpService`, so the failure mode of a typo is *"talks to the
-real backend and reports a connection error"*, never *"silently shows fabricated jobs"*. There is
+an absent variable all resolve to `httpService`, so the failure mode of a typo is _"talks to the
+real backend and reports a connection error"_, never _"silently shows fabricated jobs"_. There is
 no backend-reachability probe, and no `localStorage` override — "the backend is down" is a
 transient network condition, not a request to fabricate data.
 
 Which file decides it:
 
-| File | Mode value | Applies to |
-| --- | --- | --- |
-| `.env.development` | `http` | `npm run dev` |
-| `.env.production` | `http` | `npm run build` |
-| `.env.test` | `mock` | `npm test` (vitest's `test` mode) |
-| `.env.development.local` | *gitignored* | your own override |
+| File                     | Mode value   | Applies to                        |
+| ------------------------ | ------------ | --------------------------------- |
+| `.env.development`       | `http`       | `npm run dev`                     |
+| `.env.production`        | `http`       | `npm run build`                   |
+| `.env.test`              | `mock`       | `npm test` (vitest's `test` mode) |
+| `.env.development.local` | _gitignored_ | your own override                 |
 
 All three committed files are in version control precisely so that this rule is reviewable. They
 contain no secrets — a mode string and a base URL. `.env.test` is the only one that opts into
@@ -99,22 +99,22 @@ What you get, and what you do not:
 - Jobs, nodes, metrics and the log stream all come from `src/lib/mock-server.ts` (in-memory,
   resets on reload) and nothing touches the network.
 - A stopped backend is **not** silently replaced by demo data. Without the mock mode you get a
-  *"Cannot reach the cluster backend"* connection error, because a rejected `fetch` is normalised
+  _"Cannot reach the cluster backend"_ connection error, because a rejected `fetch` is normalised
   to `ServiceError` with `status === 0` and `error_code === "BACKEND_UNREACHABLE"`.
 
 ## Service layer
 
 Everything the UI does against a backend goes through `src/services/`:
 
-| File | Role |
-| --- | --- |
-| `index.ts` | the resolver and the wrapper functions (`listJobs`, `createJob`, …) app code imports |
-| `types.ts` | the single `ClusterService` contract both implementations satisfy, plus `ServiceError` |
-| `mock.ts` | the in-memory implementation, backed by `src/lib/mock-server.ts` |
-| `http.ts` | `fetch`/WebSocket implementation against `/api/v1` |
-| `testing.ts` | **test-only** re-export of `mockService` / `httpService` |
+| File         | Role                                                                                   |
+| ------------ | -------------------------------------------------------------------------------------- |
+| `index.ts`   | the resolver and the wrapper functions (`listJobs`, `createJob`, …) app code imports   |
+| `types.ts`   | the single `ClusterService` contract both implementations satisfy, plus `ServiceError` |
+| `mock.ts`    | the in-memory implementation, backed by `src/lib/mock-server.ts`                       |
+| `http.ts`    | `fetch`/WebSocket implementation against `/api/v1`                                     |
+| `testing.ts` | **test-only** re-export of `mockService` / `httpService`                               |
 
-`mockService` and `httpService` are deliberately *not* re-exported from `index.ts`, so app code
+`mockService` and `httpService` are deliberately _not_ re-exported from `index.ts`, so app code
 cannot pick an implementation and bypass the resolver. `testing.ts` exists because tests need both
 to assert interface parity; an ESLint `no-restricted-imports` rule rejects
 `@/services/mock`, `@/services/http` and `@/services/testing` everywhere except under `tests/`
@@ -143,15 +143,15 @@ Endpoints mirrored by the mock layer:
 There are two separate test suites with different runners, different scopes and different
 requirements. They are never mixed.
 
-| | Unit + integration (vitest) | End-to-end (Playwright) |
-| --- | --- | --- |
-| Command | `npm test` | `npm run test:e2e` |
-| Watch mode | `npm run test:watch` | `npm run test:e2e:ui`, `npm run test:e2e:headed` |
-| Runner config | `vitest.config.ts` | `playwright.config.ts` |
-| File locations | `src/**/*.test.ts`, `tests/integration/**/*.test.ts` | `tests/e2e/**/*.spec.ts` |
-| Needs a backend | No | Yes — a live backend and dev server |
-| Browser required | No (jsdom) | Yes (Chromium) |
-| Type-checked by `npm run typecheck` | Yes | **No** — see [Type checking](#type-checking) |
+|                                     | Unit + integration (vitest)                          | End-to-end (Playwright)                          |
+| ----------------------------------- | ---------------------------------------------------- | ------------------------------------------------ |
+| Command                             | `npm test`                                           | `npm run test:e2e`                               |
+| Watch mode                          | `npm run test:watch`                                 | `npm run test:e2e:ui`, `npm run test:e2e:headed` |
+| Runner config                       | `vitest.config.ts`                                   | `playwright.config.ts`                           |
+| File locations                      | `src/**/*.test.ts`, `tests/integration/**/*.test.ts` | `tests/e2e/**/*.spec.ts`                         |
+| Needs a backend                     | No                                                   | Yes — a live backend and dev server              |
+| Browser required                    | No (jsdom)                                           | Yes (Chromium)                                   |
+| Type-checked by `npm run typecheck` | Yes                                                  | **No** — see [Type checking](#type-checking)     |
 
 `npm test` runs the vitest unit and integration suites in jsdom. It needs neither a running
 backend nor a dev server: `.env.test` selects the mock, deliberately. `npm run test:e2e` runs the
@@ -176,8 +176,8 @@ baseline, **and** red if a baselined error stops being reported.
 The baseline holds **1 known production error in `src/`**, and that one is a real bug rather than
 type debt:
 
-| Entry | What it is |
-| --- | --- |
+| Entry                                       | What it is                                                                                                                                                                                                                                                                                                                   |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `TS2322` at `src/routes/jobs.$jobId.tsx:84` | `src/services/index.ts` declares its `streamJobLogs` wrapper `async`, so it returns `Promise<Unsubscribe>`, while `ClusterService.streamJobLogs` is synchronous. The page stores it in a `(() => void) \| undefined` and calls it from the effect cleanup, so navigating away invokes a Promise and leaks the log WebSocket. |
 
 It is deliberately **not** fixed here: it is a behaviour change that needs its own review, and this
@@ -195,8 +195,8 @@ implicit-`any` fixes in `src/routes/*.tsx`: a `TS7006` there means something fur
 resolving to `any`, and the place to look is the type it cannot see.
 
 Fixing a baselined error means shrinking the baseline in the same commit, and `npm run typecheck`
-stays red until you do. Shrink it from `tsc`'s own output, never by hand — see *Regenerating the
-baseline* in `scripts/typecheck.mjs`.
+stays red until you do. Shrink it from `tsc`'s own output, never by hand — see _Regenerating the
+baseline_ in `scripts/typecheck.mjs`.
 
 Test files and config files are **never** baselined. `src/**/*.test.ts` and
 `tests/integration/**/*.test.ts` are genuinely type-clean, so a new type error in a test fails the
@@ -208,33 +208,33 @@ against named anchor files in `scripts/typecheck.mjs` (`REQUIRED_FILES`), plus a
 `*.test.ts` on disk under `src/`, `tests/integration/` and `tests/`. So dropping the
 `tests/integration/**` entries from `tsconfig.json`'s `include` fails loudly, naming the file,
 instead of quietly leaving `tests/integration/services.test.ts` unchecked again. The `tests/` root
-is swept past what vitest collects on purpose: a test file there is run by *nothing*, so it is
+is swept past what vitest collects on purpose: a test file there is run by _nothing_, so it is
 named as such — your test never runs — rather than as a `vitest.config.ts` problem. It is keyed on
 names, not counts: adding a test file is an ordinary change and leaves the gate green.
 
 What `npm run typecheck` covers, and what it does not:
 
-| | Covered by `npm run typecheck` |
-| --- | --- |
-| `src/**` production code | Yes, against the 1-entry baseline |
-| `src/**/*.test.ts` (6 vitest files) | Yes, no baseline |
-| `tests/integration/services.test.ts` | Yes, no baseline |
-| `vitest.config.ts`, `vite.config.ts` | Yes, no baseline |
-| **`tests/e2e/**` (7 Playwright files)** | **No** |
-| `playwright.config.ts`, `eslint.config.js` | No |
+|                                            | Covered by `npm run typecheck`    |
+| ------------------------------------------ | --------------------------------- |
+| `src/**` production code                   | Yes, against the 1-entry baseline |
+| `src/**/*.test.ts` (6 vitest files)        | Yes, no baseline                  |
+| `tests/integration/services.test.ts`       | Yes, no baseline                  |
+| `vitest.config.ts`, `vite.config.ts`       | Yes, no baseline                  |
+| **`tests/e2e/**` (7 Playwright files)**    | **No**                            |
+| `playwright.config.ts`, `eslint.config.js` | No                                |
 
 **"Typecheck passes" does not mean "everything is checked".** `tests/e2e/**` is a separate
 TypeScript program (`tsconfig.e2e.json`) because Playwright runs in Node against a live backend,
 not in the jsdom environment the rest of the suite uses. It carries **8 known errors**
 (7 × `TS2345` in `job-lifecycle.spec.ts`, 1 × `TS7006` in `node-monitoring.spec.ts`) and is
-deliberately *not* part of `npm run typecheck`. Those 8 are known debt, not an accident — but they
+deliberately _not_ part of `npm run typecheck`. Those 8 are known debt, not an accident — but they
 are not fixed here, so the gap is recorded in `tsconfig.e2e.json` and nowhere else.
 
 `npm run typecheck:e2e` is how the gap is measured. It runs the same `tsc --noEmit -p
 tsconfig.e2e.json`, prints all 8 with their `file:line`, and **exits 0**: it is an advisory report,
 not a gate. It used to exit non-zero, permanently, and that was a trap rather than a signal — the
 next person to wire an npm script into CI by muscle memory inherits a red pipeline they did not
-cause, and people route *around* red long before they route around missing, which hides the 8 from
+cause, and people route _around_ red long before they route around missing, which hides the 8 from
 everyone instead of reminding one person. So the diagnostics are unchanged and only the verdict is
 gone: the count stays reproducible and shrinkable, and `npm run typecheck` stays the gate.
 
@@ -246,6 +246,51 @@ exactly this reason.
 
 `npm run build` is deliberately **not** type-gated: it stays `vite build`, which strips types
 without checking them. Run `npm run typecheck` separately.
+
+### Native binaries and the lockfile
+
+```bash
+npm run lockfile:check   # asserts package-lock.json resolves every platform variant it declares
+```
+
+The build toolchain — rollup, rolldown, esbuild, lightningcss, `@tailwindcss/oxide`,
+`@oxc-parser` — ships **one npm package per OS/CPU/libc** and lists them all under
+`optionalDependencies`, so each install takes only the one it can run. That makes
+`package-lock.json` the only place the full set is written down, and it makes the failure
+mode silent when it is incomplete:
+
+|                                |                                                                           |
+| ------------------------------ | ------------------------------------------------------------------------- |
+| `npm ci` with missing variants | exits **0**, warns nothing, installs no native binary                     |
+| `npm install`                  | does **not** repair it — npm treats an existing lockfile as authoritative |
+| First sign of trouble          | `npm run build` failing with `Cannot find module …-linux-x64-gnu`         |
+
+That is exactly the state this lockfile was in for its whole life: **8 `win32` entries, 0
+`linux`, 0 `darwin`**. Only Windows worked; Linux and macOS builds were broken, and no
+commit that ever touched the lockfile had introduced it — it was regenerated from a
+partially-populated `node_modules` rather than resolved from the registry
+([npm/cli#4828](https://github.com/npm/cli/issues/4828)). Issue #77 repaired it by
+regenerating from a clean tree.
+
+`npm run lockfile:check` is the guard against that returning. It cross-checks each
+package's declared `optionalDependencies` platform families against what `packages`
+actually resolves — **121 variants across 7 packages** — and exits 1 naming every gap.
+Run it in CI, and before committing any hand-edit to the lockfile.
+
+**If it fires, `npm install` will not fix it.** Regenerate from a _fully_ clean tree:
+
+```bash
+rm -rf node_modules package-lock.json && npm install
+```
+
+Delete **both**. Removing only the lockfile while `node_modules` survives is the same trap
+in reverse: npm rebuilds the lockfile from that tree, so you can end up with _zero_ platform
+entries, breaking Windows as well.
+
+A caveat worth knowing: a full regeneration re-resolves `^` ranges, so it can move
+versions within their declared range. It is a lockfile **repair**, not a version bump —
+`package.json` is unchanged, and `overrides` (currently `rolldown`) is re-applied on every
+install and survives.
 
 ## Pages
 
