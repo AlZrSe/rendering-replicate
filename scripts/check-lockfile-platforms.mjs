@@ -67,12 +67,19 @@
  * can end up with **zero** platform entries — breaking Windows as well as Linux. Both must
  * go.
  *
+ * Run `npm install` a **second** time before believing the result. A single pass can hoist
+ * `ajv@6` to the root and drop `ajv@8` and `fast-uri`, which yields a lockfile `npm ci`
+ * rejects (`Missing: json-schema-traverse@0.4.1 from lock file`) — and `lockfile:check`
+ * **cannot** see this, because it checks that a variant is resolved, not that the tree is
+ * coherent, so it reports `OK` on that file. Confirm with `npm ci && npm run lockfile:check`.
+ *
  * ## Exit codes
  *
  * `0` — every declared platform variant is resolved. `1` — otherwise, and specifically
- * including the cases where the lockfile cannot be read or has no `packages` map. Those
- * are deliberately *not* reported as success: a guard that cannot see the lockfile has not
- * verified anything, and "nothing was checked" is not "nothing is missing".
+ * including the cases where the lockfile cannot be read, has no `packages` map, or declares
+ * no platform variant anywhere. Those are deliberately *not* reported as success: a guard
+ * that cannot see the lockfile, or that saw nothing to check inside it, has not verified
+ * anything, and "nothing was checked" is not "nothing is missing".
  *
  * A path argument is accepted so the negative control can be run without reverting the
  * working tree: `node scripts/check-lockfile-platforms.mjs <lockfile>`.
@@ -186,6 +193,22 @@ for (const [key, entry] of Object.entries(packages)) {
 
   const missing = variants.filter((name) => !isResolved(name, key));
   if (missing.length > 0) gaps.push({ key, version: entry.version, missing });
+}
+
+if (checkedParents === 0) {
+  die([
+    `lockfile:check: FAILED — none of the ${Object.keys(packages).length} entries in ${LOCKFILE} declares a platform variant, so nothing was cross-checked.`,
+    "",
+    "  Refusing to report zero gaps here: 'nothing was checked' is not 'nothing is missing'.",
+    '  A lockfile in this state installs no native binary on any platform, and "npm ci"',
+    "  still exits 0. It is what an empty `packages` map looks like, and what a lockfile",
+    '  looks like once its packages have lost their "optionalDependencies" maps — which is',
+    "  how the original defect looked, reported the other way round.",
+    "",
+    "  Regenerate from a fully clean tree:",
+    "",
+    "      rm -rf node_modules package-lock.json && npm install && npm install",
+  ]);
 }
 
 if (gaps.length > 0) {

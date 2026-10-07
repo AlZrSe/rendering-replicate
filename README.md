@@ -287,6 +287,11 @@ Delete **both**. Removing only the lockfile while `node_modules` survives is the
 in reverse: npm rebuilds the lockfile from that tree, so you can end up with _zero_ platform
 entries, breaking Windows as well.
 
+Run `npm install` **twice**. A single pass can hoist `ajv@6` to the root and drop `ajv@8`
+and `fast-uri`, producing a lockfile `npm ci` rejects — and `lockfile:check` reports `OK` on
+it, because it checks that a variant is resolved, not that the tree is coherent. The second
+pass corrects it; verify with `npm ci && npm run lockfile:check`.
+
 A caveat worth knowing: a full regeneration re-resolves `^` ranges, so it can move
 versions within their declared range. It is a lockfile **repair**, not a version bump —
 `package.json` is unchanged, and `overrides` (currently `rolldown`) is re-applied on every
