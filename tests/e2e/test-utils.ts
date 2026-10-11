@@ -90,7 +90,7 @@ export async function updateSettings(
   await expect(page.locator("text=Settings saved")).toBeVisible();
 }
 
-export async function createJob(page: Page, job: JobData = defaultJob) {
+export async function createJob(page: Page, job: JobData = defaultJob): Promise<string> {
   await page.click('a[href="/jobs/new"], button:has-text("New Job")');
   await expect(page).toHaveURL("/jobs/new");
 
@@ -123,8 +123,20 @@ export async function createJob(page: Page, job: JobData = defaultJob) {
   // Wait for redirect to job detail page
   await page.waitForURL(/\/jobs\/job-\d+/);
 
-  const jobId = page.url().match(/\/jobs\/(job-\d+)/)?.[1];
-  return jobId;
+  const match = page.url().match(/\/jobs\/(job-\d+)/);
+  if (!match) throw new Error("Job ID not found in URL after creation");
+  return match[1] as string;
+}
+
+export interface JobResponse {
+  job_id: string;
+  name: string;
+  status: string;
+  spec: unknown;
+  created_at: string;
+  retry_count: number;
+  exit_code?: number | null;
+  error?: string | null;
 }
 
 export async function waitForJobStatus(
@@ -132,7 +144,7 @@ export async function waitForJobStatus(
   jobId: string,
   expectedStatus: string,
   timeout = 30000,
-) {
+): Promise<JobResponse> {
   const startTime = Date.now();
   while (Date.now() - startTime < timeout) {
     const response = await page.request.get(`${TEST_API_URL}/jobs/${jobId}`, {
@@ -141,7 +153,7 @@ export async function waitForJobStatus(
     if (response.ok()) {
       const job = await response.json();
       if (job.status === expectedStatus) {
-        return job;
+        return job as JobResponse;
       }
     }
     await page.waitForTimeout(1000);
@@ -149,50 +161,36 @@ export async function waitForJobStatus(
   throw new Error(`Job ${jobId} did not reach status ${expectedStatus} within ${timeout}ms`);
 }
 
-export async function cancelJob(page: Page, jobId: string) {
+export async function cancelJob(page: Page, jobId: string): Promise<JobResponse> {
   const response = await page.request.post(`${TEST_API_URL}/jobs/${jobId}/cancel`, {
     headers: { Authorization: `Bearer ${TEST_TOKEN}` },
   });
   return response.json();
 }
 
-export async function retryJob(page: Page, jobId: string) {
+export async function retryJob(page: Page, jobId: string): Promise<JobResponse> {
   const response = await page.request.post(`${TEST_API_URL}/jobs/${jobId}/retry`, {
     headers: { Authorization: `Bearer ${TEST_TOKEN}` },
   });
   return response.json();
 }
 
-export async function deleteJob(page: Page, jobId: string) {
+export async function deleteJob(page: Page, jobId: string): Promise<number> {
   const response = await page.request.delete(`${TEST_API_URL}/jobs/${jobId}`, {
     headers: { Authorization: `Bearer ${TEST_TOKEN}` },
   });
   return response.status();
 }
 
-export async function getJobLogs(page: Page, jobId: string) {
+export async function getJobLogs(page: Page, jobId: string): Promise<string[]> {
   const response = await page.request.get(`${TEST_API_URL}/jobs/${jobId}/logs/history`, {
     headers: { Authorization: `Bearer ${TEST_TOKEN}` },
   });
   return response.json();
 }
 
-export async function getJobMetrics(page: Page, jobId: string) {
+export async function getJobMetrics(page: Page, jobId: string): Promise<unknown> {
   const response = await page.request.get(`${TEST_API_URL}/jobs/${jobId}/metrics`, {
-    headers: { Authorization: `Bearer ${TEST_TOKEN}` },
-  });
-  return response.json();
-}
-
-export async function getNodes(page: Page) {
-  const response = await page.request.get(`${TEST_API_URL}/nodes`, {
-    headers: { Authorization: `Bearer ${TEST_TOKEN}` },
-  });
-  return response.json();
-}
-
-export async function getNodeMetrics(page: Page, nodeId: string) {
-  const response = await page.request.get(`${TEST_API_URL}/nodes/${nodeId}/metrics`, {
     headers: { Authorization: `Bearer ${TEST_TOKEN}` },
   });
   return response.json();
@@ -200,4 +198,50 @@ export async function getNodeMetrics(page: Page, nodeId: string) {
 
 export function uniqueName(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+export interface NodeResponse {
+  node_id: string;
+  name: string;
+  status: string;
+  gpus: unknown[];
+  resources: unknown;
+  spec: unknown;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function getNodes(page: Page): Promise<NodeResponse[]> {
+  const response = await page.request.get(`${TEST_API_URL}/nodes/`, {
+    headers: { Authorization: `Bearer ${TEST_TOKEN}` },
+  });
+  return response.json();
+}
+
+export async function getNodeMetrics(page: Page, nodeId: string): Promise<NodeMetricsResponse> {
+  const response = await page.request.get(`${TEST_API_URL}/nodes/${nodeId}/metrics`, {
+    headers: { Authorization: `Bearer ${TEST_TOKEN}` },
+  });
+  return response.json();
+}
+
+export interface NodeMetricsResponse {
+  job_id: string;
+  gpu_metrics: Array<{
+    timestamp: string;
+    gpu_id: number;
+    memory_used_mb: number;
+    memory_total_mb: number;
+    utilization_percent: number;
+  }>;
+  cpu_metrics: Array<{
+    timestamp: string;
+    cpu_id: number;
+    utilization_percent: number;
+  }>;
+  summary: {
+    gpu_memory_avg_mb: number;
+    gpu_utilization_avg_percent: number;
+    cpu_avg_percent: number;
+  };
 }

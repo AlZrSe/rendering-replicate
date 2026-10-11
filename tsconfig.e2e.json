@@ -7,23 +7,12 @@
   // nothing, and it would reverse the recorded decision (issue #30, Q3) that
   // the two runners own disjoint file sets.
   //
-  // This file exists so the boundary is a config file rather than a comment, so
-  // the 8 known errors in `tests/e2e/**` have a command to shrink against:
+  // This file exists so the boundary is a config file rather than a comment.
+  // The 8 known errors in `tests/e2e/**` were fixed in issue #46. The count
+  // below is now 0. `npm run typecheck:e2e` exits 0 and prints no errors.
   //
-  //     npm run typecheck:e2e
-  //
-  // It reports 8 errors today (7 x TS2345 in job-lifecycle.spec.ts, 1 x TS7006
-  // in node-monitoring.spec.ts). Issue #39 scoped itself to the main program and
-  // declined them; they are tracked in issue #46.
-  // `npm run typecheck:e2e` prints every one of them with its file:line and
-  // **exits 0** — it is an advisory report, not a gate, because a permanently
-  // red npm target gets routed around rather than fixed
-  // (scripts/typecheck-e2e.mjs). Update the count above in the same commit as
-  // any change to it.
-  //
-  // What that exit code does NOT change: `npm run typecheck` still does not check
-  // `tests/e2e/**`, so "the typecheck passes" still does not mean "everything is
-  // checked".
+  // `playwright.config.ts` is deliberately not pulled in: it carries 4 errors
+  // of its own and is tracked separately.
   "extends": "./tsconfig.json",
   "compilerOptions": {
     // A Node program. The vitest program pins `types: ["vite/client"]`, which
