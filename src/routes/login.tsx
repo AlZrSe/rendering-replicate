@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { validateToken, ServiceError } from "@/services";
-import { getSettings, setSettings } from "@/lib/settings";
+import { getSettings, setSettings, defaultSettings } from "@/lib/settings";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -29,7 +29,7 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
   const navigate = useNavigate();
   const [token, setToken] = useState("");
-  const [apiUrl, setApiUrl] = useState("http://localhost:8000/api/v1");
+  const [apiUrl, setApiUrl] = useState(defaultSettings.apiBaseUrl);
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -45,7 +45,9 @@ function LoginPage() {
     try {
       const ok = await validateToken(token);
       if (!ok) {
-        toast.error("That token looks too short (min 8 characters).");
+        toast.error("Token rejected by backend. Check if it is valid and not expired.", {
+          description: "The cluster returned an authentication error.",
+        });
         return;
       }
       setSettings({ token: token.trim(), apiBaseUrl: apiUrl.trim() });
@@ -78,53 +80,51 @@ function LoginPage() {
           </div>
           <div>
             <h2 className="text-lg font-semibold">Scientific Home Cluster</h2>
-            <p className="font-mono text-xs text-muted-foreground">bearer token required</p>
+            <p className="text-sm text-muted-foreground">
+              Enter your bearer token to access the dashboard
+            </p>
           </div>
         </div>
-
-        <div className="mt-6 space-y-4">
+        <div className="mt-8 space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="token">Bearer token</Label>
+            <Label htmlFor="token">Bearer Token</Label>
             <div className="relative">
-              <KeyRound className="absolute top-2.5 left-3 size-4 text-muted-foreground" />
+              <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input
                 id="token"
                 type={show ? "text" : "password"}
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
-                placeholder="cluster-token-…"
-                autoComplete="off"
-                required
-                className="px-10 font-mono"
+                placeholder="Paste your cluster token here"
+                className="pl-10 pr-10"
+                disabled={busy}
               />
-              <button
+              <Button
                 type="button"
-                onClick={() => setShow((v) => !v)}
-                aria-label={show ? "Hide token" : "Show token"}
-                className="absolute top-2.5 right-3 text-muted-foreground hover:text-foreground"
+                variant="ghost"
+                size="icon"
+                className="absolute right-2 top-1/2 -translate-y-1/2"
+                onClick={() => setShow((s) => !s)}
+                disabled={busy}
               >
                 {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-              </button>
+              </Button>
             </div>
           </div>
-
           <div className="space-y-2">
-            <Label htmlFor="api">API base URL</Label>
+            <Label htmlFor="apiUrl">API Base URL</Label>
             <Input
-              id="api"
+              id="apiUrl"
+              type="url"
               value={apiUrl}
               onChange={(e) => setApiUrl(e.target.value)}
-              className="font-mono text-sm"
+              placeholder="https://your-backend.example.com/api/v1"
+              disabled={busy}
             />
           </div>
-
           <Button type="submit" className="w-full" disabled={busy}>
-            {busy ? "Validating…" : "Connect"}
+            {busy ? "Connecting…" : "Connect"}
           </Button>
-          <p className="text-center text-xs text-muted-foreground">
-            Authorisation is skipped on localhost. On any other host, enter the cluster&apos;s
-            shared bearer token.
-          </p>
         </div>
       </form>
     </div>
