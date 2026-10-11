@@ -57,7 +57,7 @@ export function resetServiceCache() {
  * Kept `async` for backwards compatibility: every wrapper below and its
  * callers `await` it. Resolution itself is synchronous now.
  */
-export async function getClusterAsync(): Promise<ClusterService> {
+export function getClusterAsync(): ClusterService {
   currentService ??= useMock ? mockService : httpService;
   return currentService;
 }
@@ -67,70 +67,70 @@ export { ServiceError } from "./types";
 
 // Async wrapper functions that use the resolved cluster service
 export async function listJobs(query?: JobQuery): Promise<JobListResult> {
-  const service = await getClusterAsync();
+  const service = getClusterAsync();
   return service.listJobs(query);
 }
 
 export async function getJob(id: string): Promise<JobState> {
-  const service = await getClusterAsync();
+  const service = getClusterAsync();
   return service.getJob(id);
 }
 
 export async function createJob(spec: JobSpec): Promise<JobState> {
-  const service = await getClusterAsync();
+  const service = getClusterAsync();
   return service.createJob(spec);
 }
 
 export async function retryJob(id: string): Promise<JobState> {
-  const service = await getClusterAsync();
+  const service = getClusterAsync();
   return service.retryJob(id);
 }
 
 export async function cancelJob(id: string): Promise<JobState> {
-  const service = await getClusterAsync();
+  const service = getClusterAsync();
   return service.cancelJob(id);
 }
 
 export async function deleteJob(id: string): Promise<void> {
-  const service = await getClusterAsync();
+  const service = getClusterAsync();
   return service.deleteJob(id);
 }
 
 export async function getJobLogs(id: string): Promise<string[]> {
-  const service = await getClusterAsync();
+  const service = getClusterAsync();
   return service.getJobLogs(id);
 }
 
-export async function streamJobLogs(
+export function streamJobLogs(
   id: string,
   onLine: (line: string) => void,
   onStatus: (status: LogStreamStatus) => void,
-): Promise<Unsubscribe> {
-  const service = await getClusterAsync();
+): Unsubscribe {
+  const service = getClusterAsync();
   return service.streamJobLogs(id, onLine, onStatus);
 }
 
 export async function getJobMetrics(id: string): Promise<JobMetrics> {
-  const service = await getClusterAsync();
+  const service = getClusterAsync();
   return service.getJobMetrics(id);
 }
 
 export async function listNodes(): Promise<NodeSpec[]> {
-  const service = await getClusterAsync();
+  const service = getClusterAsync();
   return service.listNodes();
 }
 
 export async function getNode(id: string): Promise<NodeSpec> {
-  const service = await getClusterAsync();
+  const service = getClusterAsync();
   return service.getNode(id);
 }
 
 export async function getNodeMetrics(id: string): Promise<JobMetrics> {
-  const service = await getClusterAsync();
+  const service = getClusterAsync();
   return service.getNodeMetrics(id);
 }
 
 export async function validateToken(token: string): Promise<boolean> {
-  const service = await getClusterAsync();
+  const service = getClusterAsync();
   return service.validateToken(token);
 }
