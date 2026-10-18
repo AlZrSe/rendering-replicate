@@ -49,6 +49,29 @@ export async function login(page: Page, token: string = TEST_TOKEN) {
   await expect(page).toHaveURL("/");
 }
 
+/**
+ * Start a test from a known-empty browser: no cookies, no localStorage.
+ *
+ * Issue #141. Every spec used to do this inline in a `beforeEach`, as
+ * `page.evaluate(() => localStorage.clear())` BEFORE the test's own first
+ * `page.goto`. A Playwright page starts on `about:blank`, whose origin is
+ * opaque, so `localStorage` on it throws:
+ *
+ *     SecurityError: Failed to read the 'localStorage' property from
+ *     'Window': Access is denied for this document.
+ *
+ * That is a property of *when* the evaluate runs, not of which origin the suite
+ * points at, so it failed identically against the vite dev server on :5173 and
+ * against a compose stack on :8000. Nothing about the arrangement was the cause,
+ * and nothing about the origin is assumed here: the navigation uses whatever
+ * `baseURL` the run is configured with.
+ */
+export async function resetAuthState(page: Page, baseURL?: string): Promise<void> {
+  await page.context().clearCookies();
+  await page.goto(baseURL ?? "/");
+  await page.evaluate(() => localStorage.clear());
+}
+
 export async function gotoSettings(page: Page) {
   await page.click('a[href="/settings"], button:has-text("Settings")');
   await expect(page).toHaveURL("/settings");

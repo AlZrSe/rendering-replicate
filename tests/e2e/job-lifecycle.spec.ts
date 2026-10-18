@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import {
   login,
   TEST_TOKEN,
+  resetAuthState,
   createJob,
   waitForJobStatus,
   cancelJob,
@@ -14,9 +15,10 @@ import {
 } from "./test-utils";
 
 test.describe("Job Lifecycle", () => {
-  test.beforeEach(async ({ page }) => {
-    await page.context().clearCookies();
-    await page.evaluate(() => localStorage.clear());
+  test.beforeEach(async ({ page, baseURL }) => {
+    // resetAuthState navigates BEFORE clearing: localStorage on about:blank
+    // throws (issue #141).
+    await resetAuthState(page, baseURL);
     await login(page, TEST_TOKEN);
   });
 

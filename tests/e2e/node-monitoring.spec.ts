@@ -1,10 +1,9 @@
 import { test, expect } from "@playwright/test";
-import { login, TEST_TOKEN, getNodes, getNodeMetrics, uniqueName } from "./test-utils";
+import { login, TEST_TOKEN, getNodes, getNodeMetrics, uniqueName, resetAuthState } from "./test-utils";
 
 test.describe("Node Monitoring", () => {
-  test.beforeEach(async ({ page }) => {
-    await page.context().clearCookies();
-    await page.evaluate(() => localStorage.clear());
+  test.beforeEach(async ({ page, baseURL }) => {
+    await resetAuthState(page, baseURL);
     await login(page, TEST_TOKEN);
   });
 

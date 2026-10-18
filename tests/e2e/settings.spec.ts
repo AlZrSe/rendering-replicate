@@ -1,10 +1,9 @@
 import { test, expect } from "@playwright/test";
-import { login, TEST_TOKEN, updateSettings, gotoSettings } from "./test-utils";
+import { login, TEST_TOKEN, updateSettings, gotoSettings, resetAuthState } from "./test-utils";
 
 test.describe("Settings", () => {
-  test.beforeEach(async ({ page }) => {
-    await page.context().clearCookies();
-    await page.evaluate(() => localStorage.clear());
+  test.beforeEach(async ({ page, baseURL }) => {
+    await resetAuthState(page, baseURL);
     await login(page, TEST_TOKEN);
   });
 

@@ -1,10 +1,9 @@
 import { test, expect } from "@playwright/test";
-import { login, TEST_TOKEN, gotoSettings, uniqueName } from "./test-utils";
+import { login, TEST_TOKEN, gotoSettings, uniqueName, resetAuthState } from "./test-utils";
 
 test.describe("Profiles", () => {
-  test.beforeEach(async ({ page }) => {
-    await page.context().clearCookies();
-    await page.evaluate(() => localStorage.clear());
+  test.beforeEach(async ({ page, baseURL }) => {
+    await resetAuthState(page, baseURL);
     await login(page, TEST_TOKEN);
   });
 

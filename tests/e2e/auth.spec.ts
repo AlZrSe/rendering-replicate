@@ -1,11 +1,11 @@
 import { test, expect } from "@playwright/test";
-import { login, TEST_TOKEN, updateSettings } from "./test-utils";
+import { login, TEST_TOKEN, updateSettings, resetAuthState } from "./test-utils";
 
 test.describe("Authentication", () => {
-  test.beforeEach(async ({ page }) => {
-    // Clear any existing auth state
-    await page.context().clearCookies();
-    await page.evaluate(() => localStorage.clear());
+  test.beforeEach(async ({ page, baseURL }) => {
+    // Clear any existing auth state. resetAuthState navigates BEFORE clearing:
+    // localStorage on about:blank throws (issue #141).
+    await resetAuthState(page, baseURL);
   });
 
   test("should login with valid token", async ({ page }) => {
