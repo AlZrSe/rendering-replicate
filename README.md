@@ -173,16 +173,22 @@ committed inventory, `scripts/typecheck-baseline.json`. Read `scripts/typecheck.
 comparison works; the short version is that the gate is red if there is any type error outside the
 baseline, **and** red if a baselined error stops being reported.
 
-The baseline holds **1 known production error in `src/`**, and that one is a real bug rather than
-type debt:
+The baseline is **empty**: `"count": 0`, `"diagnostics": []`. `src/` has no known production type
+error, so any new one fails the gate outright. The file is kept rather than deleted precisely so the
+gate still runs and still fails on a regression — its own `$comment` says so.
 
-| Entry                                       | What it is                                                                                                                                                                                                                                                                                                                   |
-| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `TS2322` at `src/routes/jobs.$jobId.tsx:84` | `src/services/index.ts` declares its `streamJobLogs` wrapper `async`, so it returns `Promise<Unsubscribe>`, while `ClusterService.streamJobLogs` is synchronous. The page stores it in a `(() => void) \| undefined` and calls it from the effect cleanup, so navigating away invokes a Promise and leaks the log WebSocket. |
+It was not always empty. It once held 16 entries, and the last of them was a real bug rather than type
+debt:
 
-It is deliberately **not** fixed here: it is a behaviour change that needs its own review, and this
-issue declined it. `scripts/typecheck-baseline.json`'s `$comment` records the same provenance. It is
-tracked in issue #45 — fix that one and the baseline is empty.
+| Entry                                       | What it was                                                                                                                                                                                                                                                                                                                |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `TS2322` at `src/routes/jobs.$jobId.tsx:84` | `src/services/index.ts` declared its `streamJobLogs` wrapper `async`, so it returned `Promise<Unsubscribe>`, while `ClusterService.streamJobLogs` is synchronous. The page stored it in a `(() => void) \| undefined` and called it from the effect cleanup, so navigating away invoked a Promise and leaked the log WebSocket. |
+
+`streamJobLogs` is synchronous again (`export function`, not `export async function`, at
+`src/services/index.ts:104`), so that entry is gone and the baseline went to zero with it. Both
+halves are worth keeping in the record: the entry was a real defect, and dropping it without touching
+the wrapper would have turned a ratchet into a rubber stamp. If a new `TS2322` reappears there, the
+fix is the wrapper — **not** a baseline entry.
 
 **The other 15 entries this file used to hold were one missing line, not 15 small debts.**
 `src/services/types.ts` imported five types from `@/lib/types` and re-exported none of them, so the
@@ -216,7 +222,7 @@ What `npm run typecheck` covers, and what it does not:
 
 |                                            | Covered by `npm run typecheck`    |
 | ------------------------------------------ | --------------------------------- |
-| `src/**` production code                   | Yes, against the 1-entry baseline |
+| `src/**` production code                   | Yes, against an empty baseline     |
 | `src/**/*.test.ts` (6 vitest files)        | Yes, no baseline                  |
 | `tests/integration/services.test.ts`       | Yes, no baseline                  |
 | `vitest.config.ts`, `vite.config.ts`       | Yes, no baseline                  |
