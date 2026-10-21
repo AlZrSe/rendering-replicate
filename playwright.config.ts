@@ -72,8 +72,20 @@ export default defineConfig({
           },
         ]
       : undefined,
+  // Global timeout for the entire test run (30 minutes)
+  globalTimeout: 1800000,
+  // Per-test timeout (60 seconds)
   timeout: 60000,
   expect: {
     timeout: 10000,
+  },
+  // Test-level logging hooks
+  testConfig: {
+    beforeAll: async () => {
+      console.log("[Playwright] Test suite starting");
+    },
+    afterAll: async () => {
+      console.log("[Playwright] Test suite completed");
+    },
   },
 });
