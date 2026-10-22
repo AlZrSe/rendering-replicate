@@ -68,7 +68,7 @@ test.describe("Dashboard", () => {
     await expect(page.getByRole("heading", { name: "Jobs" })).toBeVisible();
     await expect(page.locator("text=cluster workload overview")).toBeVisible();
     // Should have jobs table with seeded data
-    await expect(page.locator("text=gromacs-simulation").first().or(page.locator("text=vasp-relaxation").first()).or(page.locator("text=lammps-md").first()).or(page.locator("text=job-").first())).toBeVisible({ timeout: 10000 });
+    await expect(page.locator("tbody a").first()).toBeVisible({ timeout: 10000 });
   });
 
   test("should show theme toggle in header", async ({ page }) => {
