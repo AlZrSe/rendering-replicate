@@ -142,11 +142,9 @@ function SettingsPage() {
 
         <div className="flex flex-wrap gap-2">
           <Button onClick={save}>Save settings</Button>
-          {!local && (
-            <Button variant="outline" onClick={signOut}>
-              <LogOut className="size-4" /> Sign out
-            </Button>
-          )}
+          <Button variant="outline" onClick={signOut}>
+            <LogOut className="size-4" /> Sign out
+          </Button>
         </div>
       </div>
     </Shell>
