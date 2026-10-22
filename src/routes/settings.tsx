@@ -50,6 +50,11 @@ function SettingsPage() {
   };
 
   const signOut = () => {
+    // Set the loggedOut flag to prevent redirect loop on localhost
+    // when Shell sees no token but we're intentionally logging out.
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("shc.loggedOut", "true");
+    }
     setSettings({ token: "" });
     navigate({ to: "/login" });
   };

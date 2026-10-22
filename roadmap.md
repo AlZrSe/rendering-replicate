@@ -16,5 +16,6 @@
 - [x] Explicit `VITE_CLUSTER_BACKEND=mock` opt-in, no reachability probe, no implicit mock fallback
 
 ## Later (needs the real backend)
+
 - Verify src/services/http.ts against the FastAPI routes end-to-end in CI (the Playwright suite is the contract check)
 - Date-range filter on the jobs list

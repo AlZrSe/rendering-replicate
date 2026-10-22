@@ -1,10 +1,5 @@
 import { test, expect } from "@playwright/test";
-import {
-  login,
-  TEST_TOKEN,
-  updateSettings,
-  resetAuthState,
-} from "./test-utils";
+import { login, TEST_TOKEN, updateSettings, resetAuthState } from "./test-utils";
 
 test.describe("Authentication", () => {
   test.beforeEach(async ({ page, baseURL }) => {
@@ -90,4 +85,3 @@ test.describe("Authentication", () => {
     expect(parsed.token).toBe(newToken);
   });
 });
-

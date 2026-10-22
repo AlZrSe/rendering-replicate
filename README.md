@@ -180,8 +180,8 @@ gate still runs and still fails on a regression — its own `$comment` says so.
 It was not always empty. It once held 16 entries, and the last of them was a real bug rather than type
 debt:
 
-| Entry                                       | What it was                                                                                                                                                                                                                                                                                                                |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Entry                                       | What it was                                                                                                                                                                                                                                                                                                                     |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `TS2322` at `src/routes/jobs.$jobId.tsx:84` | `src/services/index.ts` declared its `streamJobLogs` wrapper `async`, so it returned `Promise<Unsubscribe>`, while `ClusterService.streamJobLogs` is synchronous. The page stored it in a `(() => void) \| undefined` and called it from the effect cleanup, so navigating away invoked a Promise and leaked the log WebSocket. |
 
 `streamJobLogs` is synchronous again (`export function`, not `export async function`, at
@@ -220,14 +220,14 @@ names, not counts: adding a test file is an ordinary change and leaves the gate 
 
 What `npm run typecheck` covers, and what it does not:
 
-|                                            | Covered by `npm run typecheck`    |
-| ------------------------------------------ | --------------------------------- |
-| `src/**` production code                   | Yes, against an empty baseline     |
-| `src/**/*.test.ts` (6 vitest files)        | Yes, no baseline                  |
-| `tests/integration/services.test.ts`       | Yes, no baseline                  |
-| `vitest.config.ts`, `vite.config.ts`       | Yes, no baseline                  |
-| **`tests/e2e/**` (7 Playwright files)**    | **No**                            |
-| `playwright.config.ts`, `eslint.config.js` | No                                |
+|                                            | Covered by `npm run typecheck` |
+| ------------------------------------------ | ------------------------------ |
+| `src/**` production code                   | Yes, against an empty baseline |
+| `src/**/*.test.ts` (6 vitest files)        | Yes, no baseline               |
+| `tests/integration/services.test.ts`       | Yes, no baseline               |
+| `vitest.config.ts`, `vite.config.ts`       | Yes, no baseline               |
+| **`tests/e2e/**` (7 Playwright files)**    | **No**                         |
+| `playwright.config.ts`, `eslint.config.js` | No                             |
 
 **"Typecheck passes" does not mean "everything is checked".** `tests/e2e/**` is a separate
 TypeScript program (`tsconfig.e2e.json`) because Playwright runs in Node against a live backend,

@@ -77,7 +77,9 @@ export function getSettings(): Settings {
   } catch {
     cache = defaultSettings;
   }
-  if (!cache.token && isLocalhost()) cache = { ...cache, token: LOCAL_TOKEN };
+  // No auto-injection of LOCAL_TOKEN. The bypass token is now treated as
+  // a user-provided value. The backend handles the bypass for the
+  // `localhost-no-auth` token on localhost hosts.
   return cache;
 }
 

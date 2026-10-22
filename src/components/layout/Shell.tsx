@@ -41,8 +41,17 @@ export function Shell({
   const [offline, setOffline] = useState(false);
 
   useEffect(() => {
-    if (ready && !settings.token) navigate({ to: "/login" });
-  }, [ready, settings.token, navigate]);
+    // Redirect to login if:
+    // - App is ready
+    // - No token is present
+    // - User is not on the login page already
+    // - The `shc.loggedOut` flag is not set (prevents redirect loop on logout)
+    const loggedOut =
+      typeof window !== "undefined" && window.localStorage.getItem("shc.loggedOut") === "true";
+    if (ready && !settings.token && pathname !== "/login" && !loggedOut) {
+      navigate({ to: "/login" });
+    }
+  }, [ready, settings.token, pathname, navigate]);
 
   useEffect(() => {
     const on = () => setOffline(false);

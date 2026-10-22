@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { validateToken, ServiceError } from "@/services";
-import { getSettings, setSettings, defaultSettings } from "@/lib/settings";
+import { getSettings, setSettings, defaultSettings, LOCAL_TOKEN } from "@/lib/settings";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -36,7 +36,12 @@ function LoginPage() {
   useEffect(() => {
     const s = getSettings();
     setApiUrl(s.apiBaseUrl);
-    if (s.token) navigate({ to: "/" });
+    // Only redirect if token exists AND is not the bypass token.
+    // On bypass hosts, the login form should render so the user can
+    // explicitly choose to use the bypass token.
+    if (s.token && s.token !== LOCAL_TOKEN) {
+      navigate({ to: "/" });
+    }
   }, [navigate]);
 
   const submit = async (e: React.FormEvent) => {
@@ -51,6 +56,11 @@ function LoginPage() {
         return;
       }
       setSettings({ token: token.trim(), apiBaseUrl: apiUrl.trim() });
+      // Clear the loggedOut flag so Shell doesn't redirect away from login
+      // after a successful login on localhost.
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem("shc.loggedOut");
+      }
       toast.success("Connected to cluster");
       navigate({ to: "/" });
     } catch (error) {
