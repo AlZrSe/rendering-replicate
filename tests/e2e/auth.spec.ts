@@ -16,12 +16,24 @@ test.describe("Authentication", () => {
 
   test("should show error with invalid token on non-localhost", async ({ page }) => {
     // On localhost, any token works due to bypass
-    // This test verifies the login form works
+    // This test verifies the login form works, but only runs on non-bypass hosts
+    const isBypass = await page.evaluate(() => {
+      const raw = window.location.hostname.trim().toLowerCase();
+      const h = raw.startsWith("[") && raw.endsWith("]") ? raw.slice(1, -1) : raw;
+      const exact = ["localhost", "127.0.0.1", "::1"];
+      const suffixes = [".local", ".lovable.app"];
+      return exact.includes(h) || suffixes.some((s) => h.endsWith(s));
+    });
+
+    if (isBypass) {
+      test.skip(true, "Invalid token test not applicable on bypass hosts (any token works)");
+    }
+
+    // On non-bypass hosts, this should fail with an error
     await page.goto("/login");
     await page.fill('input[id="token"]', "invalid-token-that-is-long-enough");
     await page.click('button:has-text("Sign in")');
-    // On localhost, this should still succeed
-    await expect(page).toHaveURL("/");
+    await expect(page.locator("text=Invalid token")).toBeVisible();
   });
 
   test("should logout and return to login", async ({ page }) => {

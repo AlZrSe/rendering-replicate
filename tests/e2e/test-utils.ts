@@ -42,11 +42,68 @@ export const defaultJob: JobData = {
   retry_delay_seconds: 30,
 };
 
-export async function login(page: Page, token: string = TEST_TOKEN) {
-  await page.goto("/login");
-  await page.fill('input[id="token"]', token);
-  await page.click('button:has-text("Sign in")');
-  await expect(page).toHaveURL("/");
+/**
+ * Detect if the current page is on a bypass host.
+ * This duplicates the logic from frontend/src/lib/settings.ts to ensure
+ * the test helper behaves identically to the application.
+ */
+async function isBypassHost(page: Page): Promise<boolean> {
+  return page.evaluate(() => {
+    // Duplicate the logic from frontend/src/lib/settings.ts
+    const raw = window.location.hostname.trim().toLowerCase();
+    const h = raw.startsWith("[") && raw.endsWith("]") ? raw.slice(1, -1) : raw;
+    const exact = ["localhost", "127.0.0.1", "::1"];
+    const suffixes = [".local", ".lovable.app"];
+    return exact.includes(h) || suffixes.some((s) => h.endsWith(s));
+  });
+}
+
+/**
+ * Seed localStorage with the test token and settings on bypass hosts.
+ * On bypass hosts, the login form never renders because getSettings()
+ * returns a synthetic token and the LoginPage redirects to "/".
+ */
+async function seedLocalStorageOnBypass(page: Page, token: string): Promise<void> {
+  const KEY = "shc.settings";
+  const apiBaseUrl = "http://localhost:8000/api/v1";
+  await page.evaluate(
+    (t) => {
+      const existing = localStorage.getItem(KEY);
+      const settings = existing ? JSON.parse(existing) : {};
+      settings.token = t;
+      settings.apiBaseUrl = settings.apiBaseUrl || "http://localhost:8000/api/v1";
+      settings.theme = settings.theme || "dark";
+      settings.wsReconnectMs = settings.wsReconnectMs || 3000;
+      settings.pollIntervalMs = settings.pollIntervalMs || 7000;
+      localStorage.setItem(KEY, JSON.stringify(settings));
+    },
+    token,
+  );
+}
+
+/**
+ * Log in using the test token. On bypass hosts (localhost, 127.0.0.1, ::1,
+ * .local, .lovable.app), the login form never renders because the app
+ * synthesizes a token and redirects to "/". On bypass hosts, we seed
+ * localStorage and navigate to "/". On non-bypass hosts, we drive the
+ * actual login form.
+ */
+export async function login(page: Page, token: string = TEST_TOKEN): Promise<void> {
+  const isBypass = await isBypassHost(page);
+
+  if (isBypass) {
+    // On bypass hosts, auth is automatic. Seed localStorage and go home.
+    await page.goto("/");
+    await seedLocalStorageOnBypass(page, token);
+    await page.reload(); // Hydrate the React state
+    await expect(page).toHaveURL("/");
+  } else {
+    // Non-bypass: drive the actual login form
+    await page.goto("/login");
+    await page.fill('input[id="token"]', token);
+    await page.click('button:has-text("Sign in")');
+    await expect(page).toHaveURL("/");
+  }
 }
 
 /**
