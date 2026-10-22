@@ -21,12 +21,41 @@ export function MetricChart({
   series,
   height = 220,
   domain,
+  error,
+  emptyMessage = "No data available",
 }: {
   data: Array<Record<string, number | string>>;
   series: Series[];
   height?: number;
   domain?: [number, number];
+  error?: Error | null;
+  emptyMessage?: string;
 }) {
+  // Handle error state
+  if (error) {
+    return (
+      <div
+        style={{ height }}
+        className="w-full flex items-center justify-center text-destructive text-sm"
+        role="alert"
+      >
+        {error.message}
+      </div>
+    );
+  }
+
+  // Handle empty data state
+  if (!data || data.length === 0) {
+    return (
+      <div
+        style={{ height }}
+        className="w-full flex items-center justify-center text-muted-foreground text-sm"
+      >
+        {emptyMessage}
+      </div>
+    );
+  }
+
   return (
     <div style={{ height }} className="w-full">
       <ResponsiveContainer width="100%" height="100%">

@@ -43,6 +43,8 @@ function NodeDetailPage() {
   const metricsQuery = useQuery({
     queryKey: ["node-metrics", nodeId],
     queryFn: () => getNodeMetrics(nodeId),
+    // Allow one retry before showing error to handle transient network issues
+    retry: 1,
   });
 
   const gpuData = (metricsQuery.data?.gpu_metrics ?? []).map((m) => ({
@@ -133,6 +135,17 @@ function NodeDetailPage() {
               <h2 className="mb-2 text-sm font-semibold">GPU history</h2>
               {metricsQuery.isPending ? (
                 <Skeleton className="h-52 w-full" />
+              ) : metricsQuery.isError ? (
+                <div
+                  className="h-52 flex items-center justify-center text-destructive text-sm"
+                  role="alert"
+                >
+                  Failed to load GPU metrics
+                </div>
+              ) : gpuData.length === 0 ? (
+                <div className="h-52 flex items-center justify-center text-muted-foreground text-sm">
+                  No GPU metrics available
+                </div>
               ) : (
                 <MetricChart
                   data={gpuData}
@@ -157,6 +170,17 @@ function NodeDetailPage() {
               <h2 className="mb-2 text-sm font-semibold">CPU history</h2>
               {metricsQuery.isPending ? (
                 <Skeleton className="h-52 w-full" />
+              ) : metricsQuery.isError ? (
+                <div
+                  className="h-52 flex items-center justify-center text-destructive text-sm"
+                  role="alert"
+                >
+                  Failed to load CPU metrics
+                </div>
+              ) : cpuData.length === 0 ? (
+                <div className="h-52 flex items-center justify-center text-muted-foreground text-sm">
+                  No CPU metrics available
+                </div>
               ) : (
                 <MetricChart
                   data={cpuData}
@@ -183,22 +207,32 @@ function NodeDetailPage() {
 
           <div className="panel mt-4 p-4">
             <h2 className="text-sm font-semibold">Heartbeat timeline</h2>
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {heartbeats.map((h, i) => (
-                <span
-                  key={i}
-                  title={fmtDate(h.timestamp)}
-                  className={
-                    node.status === "OFFLINE" && i > heartbeats.length - 4
-                      ? "h-8 w-3 rounded-sm bg-destructive/70"
-                      : "h-8 w-3 rounded-sm bg-success/70"
-                  }
-                />
-              ))}
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Last {heartbeats.length} heartbeats, newest on the right.
-            </p>
+            {metricsQuery.isError ? (
+              <div className="mt-3 text-sm text-destructive" role="alert">
+                Failed to load heartbeat data
+              </div>
+            ) : metricsQuery.isPending ? (
+              <Skeleton className="h-8 w-full" />
+            ) : (
+              <>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {heartbeats.map((h, i) => (
+                    <span
+                      key={i}
+                      title={fmtDate(h.timestamp)}
+                      className={
+                        node.status === "OFFLINE" && i > heartbeats.length - 4
+                          ? "h-8 w-3 rounded-sm bg-destructive/70"
+                          : "h-8 w-3 rounded-sm bg-success/70"
+                      }
+                    />
+                  ))}
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Last {heartbeats.length} heartbeats, newest on the right.
+                </p>
+              </>
+            )}
           </div>
         </>
       )}
