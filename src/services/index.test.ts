@@ -75,6 +75,11 @@ describe("service resolution (VITE_CLUSTER_BACKEND)", () => {
     const service = await getClusterAsync();
     expect(service.kind).toBe("mock");
 
+    // The mock service now requires an explicit token (no auto-injection on
+    // localhost since issue #150), so give it one before exercising data paths.
+    const { setSettings } = await import("@/lib/settings");
+    setSettings({ token: "test-token-12345" });
+
     // The probe is gone, so there is nothing that could have probed /health.
     await expect(service.listJobs({})).resolves.toBeDefined();
     expect(fetchSpy).not.toHaveBeenCalled();

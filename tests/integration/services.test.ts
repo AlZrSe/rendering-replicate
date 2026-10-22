@@ -200,6 +200,9 @@ describe("Services Layer Integration Tests", () => {
       localStorage.clear();
     }
     resetServiceCache();
+    // The frontend no longer auto-injects the localhost bypass token (issue #150),
+    // so the mock service needs an explicit token to exercise its data paths.
+    setSettings({ token: "test-token-12345" });
   });
 
   afterAll(() => {
