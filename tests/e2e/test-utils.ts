@@ -151,7 +151,7 @@ export async function createJob(page: Page, job: JobData = defaultJob): Promise<
     await page.fill('input[name="retry_delay_seconds"]', String(job.retry_delay_seconds));
   }
 
-  await page.click('button:has-text("Create job")');
+  await page.click('button:has-text("Submit job")');
 
   // Wait for redirect to job detail page
   await page.waitForURL(/\/jobs\/job-\d+/);

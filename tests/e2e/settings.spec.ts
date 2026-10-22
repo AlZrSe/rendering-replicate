@@ -79,13 +79,12 @@ test.describe("Settings", () => {
     await expect(page.locator("text=authorisation is skipped")).toBeVisible();
   });
 
-  test("should not show sign out button on localhost", async ({ page }) => {
+  test("should show sign out button on localhost", async ({ page }) => {
     await gotoSettings(page);
 
-    // On localhost, sign out button should not be visible (or should be hidden)
-    // The sign out button is conditionally rendered
+    // On localhost, sign out is available and clears the stored token.
     const signOutBtn = page.locator('button:has-text("Sign out")');
-    await expect(signOutBtn).toBeHidden();
+    await expect(signOutBtn).toBeVisible();
   });
 
   test("should persist settings across reload", async ({ page }) => {

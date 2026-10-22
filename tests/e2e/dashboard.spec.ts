@@ -105,7 +105,7 @@ test.describe("Dashboard", () => {
     // Trigger a toast by doing an action that generates one
     // (e.g., invalid action)
     await page.goto("/jobs/new");
-    await page.click('button:has-text("Create job")');
+    await page.click('button:has-text("Submit job")');
 
     // Should show validation error toast
     await expect(page.locator('[role="alert"], .toast')).toBeVisible({ timeout: 5000 });
