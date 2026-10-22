@@ -100,9 +100,9 @@ export async function login(page: Page, token: string = TEST_TOKEN): Promise<voi
   } else {
     // Non-bypass: drive the actual login form
     await page.goto("/login");
+    await page.waitForSelector('input[id="token"]', { timeout: 30000 });
     await page.fill('input[id="token"]', token);
-    await page.click('button:has-text("Sign in")');
-    await expect(page).toHaveURL("/");
+    await page.click('button:has-text("Connect")');
   }
 }
 
@@ -126,7 +126,7 @@ export async function login(page: Page, token: string = TEST_TOKEN): Promise<voi
 export async function resetAuthState(page: Page, baseURL?: string): Promise<void> {
   await page.context().clearCookies();
   await page.goto(baseURL ?? "/");
-  await page.evaluate(() => localStorage.clear());
+  await page.evaluate(() => { localStorage.clear(); localStorage.removeItem("shc.loggedOut"); });
 }
 
 export async function gotoSettings(page: Page) {
@@ -325,3 +325,5 @@ export interface NodeMetricsResponse {
     cpu_avg_percent: number;
   };
 }
+
+

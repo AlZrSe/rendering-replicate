@@ -1,5 +1,10 @@
 import { test, expect } from "@playwright/test";
-import { login, TEST_TOKEN, updateSettings, resetAuthState } from "./test-utils";
+import {
+  login,
+  TEST_TOKEN,
+  updateSettings,
+  resetAuthState,
+} from "./test-utils";
 
 test.describe("Authentication", () => {
   test.beforeEach(async ({ page, baseURL }) => {
@@ -11,7 +16,7 @@ test.describe("Authentication", () => {
   test("should login with valid token", async ({ page }) => {
     await login(page, TEST_TOKEN);
     await expect(page).toHaveURL("/");
-    await expect(page.locator("text=Jobs")).toBeVisible();
+    await expect(page.locator('h1:has-text("Jobs")')).toBeVisible();
   });
 
   test("should show error with invalid token on non-localhost", async ({ page }) => {
@@ -31,8 +36,9 @@ test.describe("Authentication", () => {
 
     // On non-bypass hosts, this should fail with an error
     await page.goto("/login");
+    await page.waitForSelector('input[id="token"]', { timeout: 30000 });
     await page.fill('input[id="token"]', "invalid-token-that-is-long-enough");
-    await page.click('button:has-text("Sign in")');
+    await page.click('button:has-text("Connect")');
     await expect(page.locator("text=Invalid token")).toBeVisible();
   });
 
@@ -84,3 +90,4 @@ test.describe("Authentication", () => {
     expect(parsed.token).toBe(newToken);
   });
 });
+
