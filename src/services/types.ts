@@ -13,7 +13,6 @@ import type {
 // every service return value and cascaded into implicit-`any` callbacks across
 // the route components. See scripts/typecheck-baseline.json.
 export type { JobListResult, JobMetrics, JobSpec, JobState, NodeSpec } from "@/lib/types";
-export type { SyncthingStatus } from "./types";
 
 export interface JobQuery {
   status?: JobStatus | "ALL";
