@@ -14,6 +14,7 @@ import { Shell } from "@/components/layout/Shell";
 import { StatusBadge } from "@/components/StatusBadge";
 import { MetricCard } from "@/components/MetricCard";
 import { EmptyState } from "@/components/EmptyState";
+import { SyncthingDashboard } from "@/components/SyncthingDashboard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -152,6 +153,8 @@ function JobsPage() {
           hint="heartbeat within 90s"
         />
       </div>
+
+      <SyncthingDashboard />
 
       <div className="panel mt-6 overflow-hidden">
         <div className="flex flex-wrap gap-3 border-b border-border p-3">

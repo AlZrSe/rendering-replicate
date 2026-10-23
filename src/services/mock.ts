@@ -11,6 +11,7 @@ import type {
   LogStreamStatus,
   Unsubscribe,
   BackendErrorResponse,
+  SyncthingStatus,
 } from "./types";
 import { ServiceError } from "./types";
 
@@ -182,5 +183,32 @@ export const mockService: ClusterService = {
   async validateToken(token: string): Promise<boolean> {
     await delay(500);
     return token.trim().length >= 8;
+  },
+
+  async getSyncthingStatus(): Promise<SyncthingStatus> {
+    await delay();
+    return {
+      running: true,
+      root_path: "/syncthing",
+      jobs_dir_exists: true,
+      nodes_dir_exists: true,
+      processed_files_count: 5,
+      jobs_folder: {
+        exists: true,
+        path: "/syncthing/jobs",
+        state_files: 3,
+      },
+      nodes_folder: {
+        exists: true,
+        path: "/syncthing/nodes",
+        state_files: 2,
+      },
+      gui: {
+        host: "127.0.0.1",
+        port: 8384,
+        url: "http://127.0.0.1:8384",
+        reachable: true,
+      },
+    };
   },
 };

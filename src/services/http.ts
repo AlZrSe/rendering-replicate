@@ -11,6 +11,7 @@ import type {
   LogStreamStatus,
   Unsubscribe,
   BackendErrorResponse,
+  SyncthingStatus,
 } from "./types";
 import { ServiceError } from "./types";
 
@@ -117,6 +118,8 @@ export const httpService: ClusterService = {
   listNodes: () => request<NodeSpec[]>("/nodes"),
   getNode: (id) => request<NodeSpec>(`/nodes/${id}`),
   getNodeMetrics: (id) => request<JobMetrics>(`/nodes/${id}/metrics`),
+
+  getSyncthingStatus: () => request<SyncthingStatus>("/syncthing/status"),
 
   /**
    * Returns a verdict on the token only. An unreachable backend is *not* a

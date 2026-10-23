@@ -29,6 +29,7 @@ import type {
   NodeSpec,
   LogStreamStatus,
   Unsubscribe,
+  SyncthingStatus,
 } from "./types";
 
 const configured = (import.meta.env["VITE_CLUSTER_BACKEND"] ?? "").trim();
@@ -128,6 +129,11 @@ export async function getNode(id: string): Promise<NodeSpec> {
 export async function getNodeMetrics(id: string): Promise<JobMetrics> {
   const service = getClusterAsync();
   return service.getNodeMetrics(id);
+}
+
+export async function getSyncthingStatus(): Promise<SyncthingStatus> {
+  const service = getClusterAsync();
+  return service.getSyncthingStatus();
 }
 
 export async function validateToken(token: string): Promise<boolean> {

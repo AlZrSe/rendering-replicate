@@ -13,6 +13,7 @@ import type {
 // every service return value and cascaded into implicit-`any` callbacks across
 // the route components. See scripts/typecheck-baseline.json.
 export type { JobListResult, JobMetrics, JobSpec, JobState, NodeSpec } from "@/lib/types";
+export type { SyncthingStatus } from "./types";
 
 export interface JobQuery {
   status?: JobStatus | "ALL";
@@ -26,6 +27,33 @@ export type LogStreamStatus = "connecting" | "open" | "closed";
 
 /** Unsubscribe from a log stream. */
 export type Unsubscribe = () => void;
+
+/**
+ * Syncthing status from the backend.
+ */
+export interface SyncthingStatus {
+  running: boolean;
+  root_path: string;
+  jobs_dir_exists: boolean;
+  nodes_dir_exists: boolean;
+  processed_files_count: number;
+  jobs_folder: {
+    exists: boolean;
+    path: string;
+    state_files: number;
+  };
+  nodes_folder: {
+    exists: boolean;
+    path: string;
+    state_files: number;
+  };
+  gui: {
+    host: string;
+    port: number;
+    url: string;
+    reachable: boolean;
+  };
+}
 
 /**
  * Backend error response format (matches ErrorResponse model).
@@ -65,6 +93,8 @@ export interface ClusterService {
   listNodes(): Promise<NodeSpec[]>;
   getNode(id: string): Promise<NodeSpec>;
   getNodeMetrics(id: string): Promise<JobMetrics>;
+
+  getSyncthingStatus(): Promise<SyncthingStatus>;
 
   validateToken(token: string): Promise<boolean>;
 }
