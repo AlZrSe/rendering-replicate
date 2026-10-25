@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Eye, EyeOff, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { Shell } from "@/components/layout/Shell";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { isLocalhost, setSettings, useSettings } from "@/lib/settings";
+import { logout } from "@/services";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
@@ -16,7 +17,7 @@ export const Route = createFileRoute("/settings")({
       {
         name: "description",
         content:
-          "Configure the cluster API base URL, bearer token, polling interval, reconnect delay and theme.",
+          "Configure the cluster API base URL, polling interval, reconnect delay and theme.",
       },
       { property: "og:title", content: "Settings · Scientific Home Cluster" },
       {
@@ -32,7 +33,6 @@ function SettingsPage() {
   const { settings, ready } = useSettings();
   const navigate = useNavigate();
   const [draft, setDraft] = useState(settings);
-  const [show, setShow] = useState(false);
   const local = isLocalhost();
 
   useEffect(() => {
@@ -42,17 +42,19 @@ function SettingsPage() {
   const save = () => {
     setSettings({
       apiBaseUrl: draft.apiBaseUrl.trim(),
-      token: draft.token.trim(),
       wsReconnectMs: Number(draft.wsReconnectMs),
       pollIntervalMs: Number(draft.pollIntervalMs),
     });
     toast.success("Settings saved");
   };
 
-  const signOut = () => {
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem("shc.settings");
-      window.location.href = "/login";
+  const signOut = async () => {
+    try {
+      await logout();
+    } finally {
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
     }
   };
 
@@ -70,31 +72,11 @@ function SettingsPage() {
               onChange={(e) => setDraft({ ...draft, apiBaseUrl: e.target.value })}
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="token">Bearer token</Label>
-            <div className="relative">
-              <Input
-                id="token"
-                type={show ? "text" : "password"}
-                className="pr-10 font-mono text-sm"
-                value={draft.token}
-                onChange={(e) => setDraft({ ...draft, token: e.target.value })}
-              />
-              <button
-                type="button"
-                onClick={() => setShow((v) => !v)}
-                aria-label={show ? "Hide token" : "Show token"}
-                className="absolute top-2.5 right-3 text-muted-foreground hover:text-foreground"
-              >
-                {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-              </button>
-            </div>
-            {local && (
-              <p className="text-xs text-muted-foreground">
-                Running on localhost — authorisation is skipped, so the token is optional here.
-              </p>
-            )}
-          </div>
+          {local && (
+            <p className="text-xs text-muted-foreground">
+              Running on localhost — authorisation is skipped automatically.
+            </p>
+          )}
         </section>
 
         <section className="panel space-y-4 p-4">

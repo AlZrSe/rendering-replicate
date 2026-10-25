@@ -96,6 +96,11 @@ export interface ClusterService {
   getSyncthingStatus(): Promise<SyncthingStatus>;
 
   validateToken(token: string): Promise<boolean>;
+
+  /** Login with shared token, sets httpOnly cookie on success. */
+  login(sharedToken: string): Promise<void>;
+  /** Logout, clears auth cookie. */
+  logout(): Promise<void>;
 }
 
 export class ServiceError extends Error {

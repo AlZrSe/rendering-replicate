@@ -140,3 +140,13 @@ export async function validateToken(token: string): Promise<boolean> {
   const service = getClusterAsync();
   return service.validateToken(token);
 }
+
+export async function login(sharedToken: string): Promise<void> {
+  const service = getClusterAsync();
+  return service.login(sharedToken);
+}
+
+export async function logout(): Promise<void> {
+  const service = getClusterAsync();
+  return service.logout();
+}

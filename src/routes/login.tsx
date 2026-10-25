@@ -5,8 +5,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { validateToken, ServiceError } from "@/services";
-import { getSettings, setSettings, defaultSettings, LOCAL_TOKEN } from "@/lib/settings";
+import { login, ServiceError } from "@/services";
+import { getSettings, setSettings, defaultSettings } from "@/lib/settings";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -28,7 +28,7 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const navigate = useNavigate();
-  const [token, setToken] = useState("");
+  const [sharedToken, setSharedToken] = useState("");
   const [apiUrl, setApiUrl] = useState(defaultSettings.apiBaseUrl);
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -36,11 +36,11 @@ function LoginPage() {
   useEffect(() => {
     const s = getSettings();
     setApiUrl(s.apiBaseUrl);
-    // Only redirect if token exists AND is not the bypass token.
     // On bypass hosts, the login form should render so the user can
     // explicitly choose to use the bypass token.
-    if (s.token && s.token !== LOCAL_TOKEN) {
-      navigate({ to: "/" });
+    if (typeof window !== "undefined" && window.localStorage.getItem("shc.loggedOut") === "true") {
+      // If explicitly logged out, show login form even on localhost
+      return;
     }
   }, [navigate]);
 
@@ -48,14 +48,7 @@ function LoginPage() {
     e.preventDefault();
     setBusy(true);
     try {
-      const ok = await validateToken(token);
-      if (!ok) {
-        toast.error("Token rejected by backend. Check if it is valid and not expired.", {
-          description: "The cluster returned an authentication error.",
-        });
-        return;
-      }
-      setSettings({ token: token.trim(), apiBaseUrl: apiUrl.trim() });
+      await login(sharedToken);
       // Clear the loggedOut flag so Shell doesn't redirect away from login
       // after a successful login on localhost.
       if (typeof window !== "undefined") {
@@ -64,15 +57,21 @@ function LoginPage() {
       toast.success("Connected to cluster");
       navigate({ to: "/" });
     } catch (error) {
-      // validateToken throws when the backend cannot be reached. That is a
-      // connection problem, not a token problem, and saying so is the whole
-      // point — before this the form blamed the token for a dead backend.
+      // login throws when the backend cannot be reached or token is invalid.
       if (error instanceof ServiceError && error.error_code === "BACKEND_UNREACHABLE") {
         toast.error("Cannot reach the cluster backend", {
           description: `Nothing answered at ${apiUrl.trim() || "the configured API URL"}.`,
         });
+      } else if (error instanceof ServiceError && error.error_code === "AUTH_SHARED_TOKEN_INVALID") {
+        toast.error("Invalid shared token", {
+          description: "The provided shared token is invalid. Please check your credentials and try again.",
+        });
+      } else if (error instanceof ServiceError && error.error_code === "AUTH_SHARED_TOKEN_NOT_CONFIGURED") {
+        toast.error("Shared token not configured on server", {
+          description: "The server administrator needs to set the SHARED_TOKEN environment variable.",
+        });
       } else {
-        toast.error("Could not validate the token", {
+        toast.error("Could not log in", {
           description: "Check the API base URL and try again.",
         });
       }
@@ -97,15 +96,15 @@ function LoginPage() {
         </div>
         <div className="mt-8 space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="token">Bearer Token</Label>
+            <Label htmlFor="sharedToken">Shared Token</Label>
             <div className="relative">
               <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input
-                id="token"
+                id="sharedToken"
                 type={show ? "text" : "password"}
-                value={token}
-                onChange={(e) => setToken(e.target.value)}
-                placeholder="Paste your cluster token here"
+                value={sharedToken}
+                onChange={(e) => setSharedToken(e.target.value)}
+                placeholder="Paste your cluster shared token here"
                 className="pl-10 pr-10"
                 disabled={busy}
               />

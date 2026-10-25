@@ -31,8 +31,8 @@ test.describe("Authentication", () => {
 
     // On non-bypass hosts, this should fail with an error
     await page.goto("/login");
-    await page.waitForSelector('input[id="token"]', { timeout: 30000 });
-    await page.fill('input[id="token"]', "invalid-token-that-is-long-enough");
+    await page.waitForSelector('input[id="sharedToken"]', { timeout: 30000 });
+    await page.fill('input[id="sharedToken"]', "invalid-token-that-is-long-enough");
     await page.click('button:has-text("Connect")');
     await expect(page.locator("text=Invalid token")).toBeVisible();
   });
@@ -52,15 +52,6 @@ test.describe("Authentication", () => {
     await expect(page).toHaveURL("/login");
   });
 
-  test("should persist token in localStorage", async ({ page }) => {
-    await login(page, TEST_TOKEN);
-
-    const token = await page.evaluate(() => localStorage.getItem("shc.settings"));
-    expect(token).toBeTruthy();
-    const parsed = JSON.parse(token!);
-    expect(parsed.token).toBe(TEST_TOKEN);
-  });
-
   test("should validate token via API", async ({ page }) => {
     await login(page, TEST_TOKEN);
 
@@ -71,17 +62,5 @@ test.describe("Authentication", () => {
     expect(response.ok()).toBeTruthy();
     const data = await response.json();
     expect(data.valid).toBe(true);
-  });
-
-  test("should allow token update in settings", async ({ page }) => {
-    await login(page, TEST_TOKEN);
-
-    const newToken = "new-test-token-that-is-long-enough-12345";
-    await updateSettings(page, { token: newToken });
-
-    // Verify token was updated
-    const stored = await page.evaluate(() => localStorage.getItem("shc.settings"));
-    const parsed = JSON.parse(stored!);
-    expect(parsed.token).toBe(newToken);
   });
 });

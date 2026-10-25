@@ -4,6 +4,7 @@ import {
   BookMarked,
   Cpu,
   LayoutList,
+  LogOut,
   Menu,
   Moon,
   Server,
@@ -14,6 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSettings } from "@/lib/settings";
+import { logout } from "@/services";
 import { cn } from "@/lib/utils";
 
 const nav = [
@@ -43,15 +45,16 @@ export function Shell({
   useEffect(() => {
     // Redirect to login if:
     // - App is ready
-    // - No token is present
     // - User is not on the login page already
     // - The `shc.loggedOut` flag is not set (prevents redirect loop on logout)
+    // With cookie-based auth, we don't check for a token in settings.
+    // The backend will reject requests with 401 if not authenticated.
     const loggedOut =
       typeof window !== "undefined" && window.localStorage.getItem("shc.loggedOut") === "true";
-    if (ready && !settings.token && pathname !== "/login" && !loggedOut) {
+    if (ready && pathname !== "/login" && !loggedOut) {
       navigate({ to: "/login" });
     }
-  }, [ready, settings.token, pathname, navigate]);
+  }, [ready, pathname, navigate]);
 
   useEffect(() => {
     const on = () => setOffline(false);
@@ -125,6 +128,21 @@ export function Shell({
           >
             {settings.theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
             {settings.theme === "dark" ? "Light mode" : "Dark mode"}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start mt-2 text-destructive hover:text-destructive"
+            onClick={async () => {
+              await logout();
+              if (typeof window !== "undefined") {
+                window.localStorage.setItem("shc.loggedOut", "true");
+              }
+              navigate({ to: "/login" });
+            }}
+          >
+            <LogOut className="size-4" />
+            Log out
           </Button>
         </div>
       </aside>

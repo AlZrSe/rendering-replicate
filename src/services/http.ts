@@ -43,15 +43,14 @@ function unreachable(what: string, cause: unknown): ServiceError {
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const { token } = getSettings();
   const what = `${init.method ?? "GET"} ${path}`;
   let res: Response;
   try {
     res = await fetch(`${base()}${path}`, {
       ...init,
+      credentials: "include", // Include cookies for auth
       headers: {
         "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(init.headers ?? {}),
       },
     });
@@ -84,6 +83,19 @@ function query(q: JobQuery) {
   return `?${p.toString()}`;
 }
 
+async function getWsTicket(): Promise<string> {
+  const res = await fetch(`${base()}/auth/ws-ticket`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) {
+    throw new ServiceError(res.status, "Failed to get WebSocket ticket");
+  }
+  const data = await res.json();
+  return data.ticket;
+}
+
 export const httpService: ClusterService = {
   kind: "http",
 
@@ -105,12 +117,24 @@ export const httpService: ClusterService = {
     if (typeof window === "undefined") return () => {};
     const url = `${base().replace(/^http/, "ws")}/jobs/${id}/logs`;
     onStatus("connecting");
-    const socket = new WebSocket(url);
-    socket.onopen = () => onStatus("open");
-    socket.onmessage = (e) => onLine(String(e.data));
-    socket.onclose = () => onStatus("closed");
-    socket.onerror = () => onStatus("closed");
-    return () => socket.close();
+
+    // Get WebSocket ticket before connecting
+    getWsTicket()
+      .then((ticket) => {
+        // Pass ticket via Sec-WebSocket-Protocol subprotocol
+        const socket = new WebSocket(url, ["bearer", ticket]);
+        socket.onopen = () => onStatus("open");
+        socket.onmessage = (e) => onLine(String(e.data));
+        socket.onclose = () => onStatus("closed");
+        socket.onerror = () => onStatus("closed");
+        return () => socket.close();
+      })
+      .catch((err) => {
+        onStatus("closed");
+        console.error("Failed to get WebSocket ticket:", err);
+      });
+
+    return () => {}; // Cleanup handled by WebSocket close
   },
 
   getJobMetrics: (id) => request<JobMetrics>(`/jobs/${id}/metrics`),
@@ -125,6 +149,7 @@ export const httpService: ClusterService = {
    * Returns a verdict on the token only. An unreachable backend is *not* a
    * verdict — it throws, so the login form can say "cannot reach the backend"
    * instead of accusing a token that may be perfectly good.
+   * Uses Authorization header for the login flow (before cookie exists).
    */
   async validateToken(token: string) {
     try {
@@ -134,6 +159,47 @@ export const httpService: ClusterService = {
       return res.ok;
     } catch (cause) {
       throw unreachable("GET /auth/verify", cause);
+    }
+  },
+
+  async login(sharedToken: string) {
+    const res = await fetch(`${base()}/auth/token`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ shared_token: sharedToken }),
+    });
+    if (!res.ok) {
+      let backendError: BackendErrorResponse | undefined;
+      try {
+        const errorData = await res.json();
+        if (errorData.error_code) {
+          backendError = errorData as BackendErrorResponse;
+        }
+      } catch {
+        // Ignore JSON parse errors
+      }
+      throw new ServiceError(res.status, "Login failed", backendError);
+    }
+  },
+
+  async logout() {
+    const res = await fetch(`${base()}/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!res.ok) {
+      let backendError: BackendErrorResponse | undefined;
+      try {
+        const errorData = await res.json();
+        if (errorData.error_code) {
+          backendError = errorData as BackendErrorResponse;
+        }
+      } catch {
+        // Ignore JSON parse errors
+      }
+      throw new ServiceError(res.status, "Logout failed", backendError);
     }
   },
 };

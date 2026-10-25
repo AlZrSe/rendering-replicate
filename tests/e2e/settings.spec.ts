@@ -23,15 +23,6 @@ test.describe("Settings", () => {
     expect(parsed.apiBaseUrl).toBe("http://custom-api:8000/api/v1");
   });
 
-  test("should update bearer token", async ({ page }) => {
-    const newToken = "new-bearer-token-12345";
-    await updateSettings(page, { token: newToken });
-
-    const stored = await page.evaluate(() => localStorage.getItem("shc.settings"));
-    const parsed = JSON.parse(stored!);
-    expect(parsed.token).toBe(newToken);
-  });
-
   test("should toggle dark mode", async ({ page }) => {
     await gotoSettings(page);
 
@@ -111,23 +102,5 @@ test.describe("Settings", () => {
 
     // Should still save (client-side validation only)
     // The actual validation happens on the backend
-  });
-
-  test("should show/hide token", async ({ page }) => {
-    await gotoSettings(page);
-
-    const tokenInput = page.locator('input[id="token"]');
-    await tokenInput.fill("secret-token-12345");
-
-    // Should be password type by default
-    await expect(tokenInput).toHaveAttribute("type", "password");
-
-    // Click show button
-    await page.click('button[aria-label="Show token"]');
-    await expect(tokenInput).toHaveAttribute("type", "text");
-
-    // Click hide button
-    await page.click('button[aria-label="Hide token"]');
-    await expect(tokenInput).toHaveAttribute("type", "password");
   });
 });

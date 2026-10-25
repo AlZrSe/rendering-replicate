@@ -50,8 +50,8 @@ export const defaultJob: JobData = {
  */
 export async function login(page: Page, token: string = TEST_TOKEN): Promise<void> {
   await page.goto("/login");
-  await page.waitForSelector('input[id="token"]', { timeout: 30000 });
-  await page.fill('input[id="token"]', token);
+  await page.waitForSelector('input[id="sharedToken"]', { timeout: 30000 });
+  await page.fill('input[id="sharedToken"]', token);
   await page.click('button:has-text("Connect")');
   await expect(page).toHaveURL("/");
 }
@@ -91,7 +91,6 @@ export async function updateSettings(
   page: Page,
   settings: Partial<{
     apiBaseUrl: string;
-    token: string;
     theme: string;
     pollIntervalMs: number;
     wsReconnectMs: number;
@@ -101,9 +100,6 @@ export async function updateSettings(
 
   if (settings.apiBaseUrl) {
     await page.fill('input[id="api"]', settings.apiBaseUrl);
-  }
-  if (settings.token) {
-    await page.fill('input[id="token"]', settings.token);
   }
   if (settings.pollIntervalMs) {
     await page.fill('input[id="poll"]', String(settings.pollIntervalMs));

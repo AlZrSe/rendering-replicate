@@ -161,3 +161,64 @@ describe("isLocalhost - rejected hosts", () => {
     expect(isLocalhost()).toBe(false);
   });
 });
+
+// Tests for token removal from settings (issue #158)
+describe("Settings - token removed from localStorage", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    localStorage.clear();
+  });
+
+  it("UT-FE-01: Settings interface no longer has token field", () => {
+    // This is a compile-time check - if token field exists, TypeScript will error
+    // We verify at runtime that defaultSettings doesn't have token
+    const { defaultSettings } = await import("./settings");
+    expect("token" in defaultSettings).toBe(false);
+  });
+
+  it("UT-FE-02: setSettings never writes token to localStorage", () => {
+    const { setSettings, getSettings } = await import("./settings");
+    
+    // Try to set a token (should be ignored)
+    setSettings({ token: "some-token" } as any);
+    
+    const stored = localStorage.getItem("shc.settings");
+    const parsed = stored ? JSON.parse(stored) : {};
+    
+    // Token should not be in localStorage
+    expect(parsed.token).toBeUndefined();
+  });
+
+  it("UT-FE-03: getSettings returns empty token (not from localStorage)", () => {
+    // Pre-populate localStorage with a token (simulating old data)
+    localStorage.setItem("shc.settings", JSON.stringify({
+      token: "old-token-from-localStorage",
+      apiBaseUrl: "http://localhost:8000/api/v1",
+      theme: "dark",
+      wsReconnectMs: 3000,
+      pollIntervalMs: 7000,
+    }));
+    
+    const { getSettings } = await import("./settings");
+    const settings = getSettings();
+    
+    // Token should not be in returned settings (interface doesn't have it)
+    // The spread will ignore unknown properties
+    expect(settings.token).toBeUndefined();
+  });
+
+  it("UT-FE-04: Login flow does not persist token", () => {
+    const { setSettings, getSettings } = await import("./settings");
+    
+    // Simulate login - settings updated but no token persisted
+    setSettings({ apiBaseUrl: "http://localhost:8000/api/v1" });
+    
+    const stored = localStorage.getItem("shc.settings");
+    const parsed = stored ? JSON.parse(stored) : {};
+    
+    // Token should not be in localStorage
+    expect(parsed.token).toBeUndefined();
+    // Other settings should be persisted
+    expect(parsed.apiBaseUrl).toBe("http://localhost:8000/api/v1");
+  });
+});

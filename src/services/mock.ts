@@ -185,6 +185,20 @@ export const mockService: ClusterService = {
     return token.trim().length >= 8;
   },
 
+  async login(sharedToken: string): Promise<void> {
+    await delay(500);
+    if (sharedToken.trim().length < 8) {
+      const error = createBackendError(401, "Invalid shared token", "AUTH_SHARED_TOKEN_INVALID");
+      throw new ServiceError(401, "Invalid shared token", error);
+    }
+    // Mock: just validate, cookie is handled by real backend
+  },
+
+  async logout(): Promise<void> {
+    await delay(100);
+    // Mock: no-op
+  },
+
   async getSyncthingStatus(): Promise<SyncthingStatus> {
     await delay();
     return {

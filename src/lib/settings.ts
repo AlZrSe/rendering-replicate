@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
 export interface Settings {
-  token: string;
   apiBaseUrl: string;
   theme: "light" | "dark";
   wsReconnectMs: number;
@@ -20,7 +19,6 @@ const KEY = "shc.settings";
 const envApiBaseUrl = (import.meta.env["VITE_API_URL"] as string | undefined)?.trim();
 
 export const defaultSettings: Settings = {
-  token: "",
   apiBaseUrl: envApiBaseUrl || "http://localhost:8000/api/v1",
   theme: "dark",
   wsReconnectMs: 3000,
@@ -77,9 +75,6 @@ export function getSettings(): Settings {
   } catch {
     cache = defaultSettings;
   }
-  // No auto-injection of LOCAL_TOKEN. The bypass token is now treated as
-  // a user-provided value. The backend handles the bypass for the
-  // `localhost-no-auth` token on localhost hosts.
   return cache;
 }
 
