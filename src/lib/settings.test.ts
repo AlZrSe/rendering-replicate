@@ -178,9 +178,11 @@ describe("Settings - token removed from localStorage", () => {
 
   it("UT-FE-02: setSettings never writes token to localStorage", () => {
     const { setSettings, getSettings } = await import("./settings");
+    const { Settings } = await import("./settings");
     
-    // Try to set a token (should be ignored)
-    setSettings({ token: "some-token" } as any);
+    // Try to set a token (should be ignored) - use type assertion for test
+    const patch: Partial<Settings> & { token?: string } = { token: "some-token" };
+    setSettings(patch);
     
     const stored = localStorage.getItem("shc.settings");
     const parsed = stored ? JSON.parse(stored) : {};
