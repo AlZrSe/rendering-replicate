@@ -2,6 +2,12 @@ import * as React from "react";
 import * as RechartsPrimitive from "recharts";
 
 import { cn } from "@/lib/utils";
+import {
+  isValidCSSColor,
+  sanitizeCSSCustomPropertyKey,
+  escapeCSSSelectorValue,
+  warnInvalidColor,
+} from "@/lib/chart-validation";
 
 // Format: { THEME_NAME: CSS_SELECTOR }
 const THEMES = { light: "", dark: ".dark" } as const;
@@ -68,26 +74,51 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     return null;
   }
 
-  return (
-    <style
-      dangerouslySetInnerHTML={{
-        __html: Object.entries(THEMES)
-          .map(
-            ([theme, prefix]) => `
-${prefix} [data-chart=${id}] {
-${colorConfig
-  .map(([key, itemConfig]) => {
-    const color = itemConfig.theme?.[theme as keyof typeof itemConfig.theme] || itemConfig.color;
-    return color ? `  --color-${key}: ${color};` : null;
-  })
-  .join("\n")}
-}
-`,
-          )
-          .join("\n"),
-      }}
-    />
-  );
+  // Sanitize the chart ID for use in CSS attribute selector
+  const sanitizedId = escapeCSSSelectorValue(id);
+
+  // Build CSS string with validated/sanitized values
+  const cssString = Object.entries(THEMES)
+    .map(
+      ([theme, prefix]) => {
+        const rules = colorConfig
+          .map(([key, itemConfig]) => {
+            const color = itemConfig.theme?.[theme as keyof typeof itemConfig.theme] || itemConfig.color;
+            
+            if (!color) {
+              return null;
+            }
+
+            // Validate color value
+            if (!isValidCSSColor(color)) {
+              warnInvalidColor(color, key);
+              return null;
+            }
+
+            // Sanitize key for CSS custom property name
+            const sanitizedKey = sanitizeCSSCustomPropertyKey(key);
+            
+            return `  --color-${sanitizedKey}: ${color};`;
+          })
+          .filter((rule): rule is string => rule !== null)
+          .join("\n");
+
+        if (!rules) {
+          return null;
+        }
+
+        return `${prefix} [data-chart=${sanitizedId}] {\n${rules}\n}`;
+      }
+    )
+    .filter((rule): rule is string => rule !== null)
+    .join("\n");
+
+  if (!cssString) {
+    return null;
+  }
+
+  // Use React-managed style element (no dangerouslySetInnerHTML)
+  return <style>{cssString}</style>;
 };
 
 const ChartTooltip = RechartsPrimitive.Tooltip;
