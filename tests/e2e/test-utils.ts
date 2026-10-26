@@ -49,7 +49,8 @@ export const defaultJob: JobData = {
  * backend on bypass hosts.
  */
 export async function login(page: Page, token: string = TEST_TOKEN): Promise<void> {
-  await page.goto("/login");
+  // resetAuthState already navigates to /login, so we don't need to navigate again.
+  // Just wait for the form to be ready.
   await page.waitForSelector('input[id="sharedToken"]', { timeout: 30000 });
   await page.fill('input[id="sharedToken"]', token);
   await page.click('button:has-text("Connect")');
@@ -72,10 +73,14 @@ export async function login(page: Page, token: string = TEST_TOKEN): Promise<voi
  * against a compose stack on :8000. Nothing about the arrangement was the cause,
  * and nothing about the origin is assumed here: the navigation uses whatever
  * `baseURL` the run is configured with.
+ *
+ * We navigate to "/login" directly (not "/") to avoid the Shell's redirect
+ * which would cause a double navigation and potential hydration issues.
  */
 export async function resetAuthState(page: Page, baseURL?: string): Promise<void> {
   await page.context().clearCookies();
-  await page.goto(baseURL ?? "/");
+  // Navigate directly to /login to avoid Shell redirect from "/" to "/login"
+  await page.goto((baseURL ?? "") + "/login");
   await page.evaluate(() => {
     localStorage.clear();
     localStorage.removeItem("shc.loggedOut");
