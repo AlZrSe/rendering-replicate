@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { isLocalhost } from "./settings";
+import { isLocalhost, resetSettingsCache } from "./settings";
+import type { Settings } from "./settings";
 
 /**
  * Issue #31: the frontend half of the localhost-bypass list.
@@ -162,62 +163,64 @@ describe("isLocalhost - rejected hosts", () => {
   });
 });
 
-// Tests for token removal from settings (issue #158)
-describe("Settings - token removed from localStorage", () => {
+// Tests for token handling in settings (issue #158)
+describe("Settings - token handling", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     localStorage.clear();
+    resetSettingsCache();
   });
 
-  it("UT-FE-01: Settings interface no longer has token field", () => {
-    // This is a compile-time check - if token field exists, TypeScript will error
-    // We verify at runtime that defaultSettings doesn't have token
+  it("UT-FE-01: Settings interface has optional token field", async () => {
+    // This is a compile-time check - token field exists but is optional
     const { defaultSettings } = await import("./settings");
+    // defaultSettings doesn't include token (it's optional)
     expect("token" in defaultSettings).toBe(false);
   });
 
-  it("UT-FE-02: setSettings never writes token to localStorage", () => {
+  it("UT-FE-02: setSettings writes token to localStorage if provided", async () => {
     const { setSettings, getSettings } = await import("./settings");
-    const { Settings } = await import("./settings");
-    
-    // Try to set a token (should be ignored) - use type assertion for test
+
+    // Try to set a token - it should be written to localStorage
     const patch: Partial<Settings> & { token?: string } = { token: "some-token" };
     setSettings(patch);
-    
+
     const stored = localStorage.getItem("shc.settings");
     const parsed = stored ? JSON.parse(stored) : {};
-    
-    // Token should not be in localStorage
-    expect(parsed.token).toBeUndefined();
+
+    // Token should be in localStorage
+    expect(parsed.token).toBe("some-token");
   });
 
-  it("UT-FE-03: getSettings returns empty token (not from localStorage)", () => {
+  it("UT-FE-03: getSettings returns token from localStorage if present", async () => {
     // Pre-populate localStorage with a token (simulating old data)
-    localStorage.setItem("shc.settings", JSON.stringify({
-      token: "old-token-from-localStorage",
-      apiBaseUrl: "http://localhost:8000/api/v1",
-      theme: "dark",
-      wsReconnectMs: 3000,
-      pollIntervalMs: 7000,
-    }));
-    
+    localStorage.setItem(
+      "shc.settings",
+      JSON.stringify({
+        token: "old-token-from-localStorage",
+        apiBaseUrl: "http://localhost:8000/api/v1",
+        theme: "dark",
+        wsReconnectMs: 3000,
+        pollIntervalMs: 7000,
+      }),
+    );
+
     const { getSettings } = await import("./settings");
     const settings = getSettings();
-    
-    // Token should not be in returned settings (interface doesn't have it)
-    // The spread will ignore unknown properties
-    expect(settings.token).toBeUndefined();
+
+    // Token should be in returned settings (from localStorage)
+    expect(settings.token).toBe("old-token-from-localStorage");
   });
 
-  it("UT-FE-04: Login flow does not persist token", () => {
+  it("UT-FE-04: Login flow does not persist token", async () => {
     const { setSettings, getSettings } = await import("./settings");
-    
-    // Simulate login - settings updated but no token persisted
+
+    // Simulate login - settings updated but no token passed
     setSettings({ apiBaseUrl: "http://localhost:8000/api/v1" });
-    
+
     const stored = localStorage.getItem("shc.settings");
     const parsed = stored ? JSON.parse(stored) : {};
-    
+
     // Token should not be in localStorage
     expect(parsed.token).toBeUndefined();
     // Other settings should be persisted

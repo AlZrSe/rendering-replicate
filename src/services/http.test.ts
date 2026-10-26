@@ -180,98 +180,123 @@ describe("httpService - cookie auth and WebSocket tickets", () => {
 
   it("UT-FE-07: WebSocket connection obtains ticket via POST /auth/ws-ticket", async () => {
     let wsTicketRequested = false;
-    
-    vi.stubGlobal("fetch", vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
-      if (url.includes("/auth/ws-ticket") && init?.method === "POST") {
-        wsTicketRequested = true;
-        return jsonResponse(200, { ticket: "ws_test-ticket-123", expires_in: 300 });
-      }
-      return jsonResponse(200, {});
-    }));
 
-    vi.stubGlobal("WebSocket", class MockWebSocket {
-      onopen: (() => void) | null = null;
-      onmessage: ((e: MessageEvent) => void) | null = null;
-      onclose: (() => void) | null = null;
-      onerror: (() => void) | null = null;
-      
-      constructor(public url: string, public protocols: string[]) {
-        setTimeout(() => this.onopen?.(), 0);
-      }
-      close() { this.onclose?.(); }
-    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+        if (url.includes("/auth/ws-ticket") && init?.method === "POST") {
+          wsTicketRequested = true;
+          return jsonResponse(200, { ticket: "ws_test-ticket-123", expires_in: 300 });
+        }
+        return jsonResponse(200, {});
+      }),
+    );
+
+    vi.stubGlobal(
+      "WebSocket",
+      class MockWebSocket {
+        onopen: (() => void) | null = null;
+        onmessage: ((e: MessageEvent) => void) | null = null;
+        onclose: (() => void) | null = null;
+        onerror: (() => void) | null = null;
+
+        constructor(
+          public url: string,
+          public protocols: string[],
+        ) {
+          setTimeout(() => this.onopen?.(), 0);
+        }
+        close() {
+          this.onclose?.();
+        }
+      },
+    );
 
     const onLine = vi.fn();
     const onStatus = vi.fn();
-    
+
     httpService.streamJobLogs("job-123", onLine, onStatus);
-    
+
     // Wait for async operations
-    await new Promise(resolve => setTimeout(resolve, 10));
-    
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
     expect(wsTicketRequested).toBe(true);
     expect(onStatus).toHaveBeenCalledWith("connecting");
   });
 
   it("UT-FE-08: WebSocket ticket passed via Sec-WebSocket-Protocol", async () => {
     let wsProtocols: string[] = [];
-    
-    vi.stubGlobal("fetch", vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
-      if (url.includes("/auth/ws-ticket")) {
-        return jsonResponse(200, { ticket: "ws_test-ticket-123", expires_in: 300 });
-      }
-      return jsonResponse(200, {});
-    }));
 
-    vi.stubGlobal("WebSocket", class MockWebSocket {
-      onopen: (() => void) | null = null;
-      onmessage: ((e: MessageEvent) => void) | null = null;
-      onclose: (() => void) | null = null;
-      onerror: (() => void) | null = null;
-      
-      constructor(public url: string, public protocols: string[]) {
-        wsProtocols = protocols;
-        setTimeout(() => this.onopen?.(), 0);
-      }
-      close() { this.onclose?.(); }
-    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+        if (url.includes("/auth/ws-ticket")) {
+          return jsonResponse(200, { ticket: "ws_test-ticket-123", expires_in: 300 });
+        }
+        return jsonResponse(200, {});
+      }),
+    );
+
+    vi.stubGlobal(
+      "WebSocket",
+      class MockWebSocket {
+        onopen: (() => void) | null = null;
+        onmessage: ((e: MessageEvent) => void) | null = null;
+        onclose: (() => void) | null = null;
+        onerror: (() => void) | null = null;
+
+        constructor(
+          public url: string,
+          public protocols: string[],
+        ) {
+          wsProtocols = protocols;
+          setTimeout(() => this.onopen?.(), 0);
+        }
+        close() {
+          this.onclose?.();
+        }
+      },
+    );
 
     const onLine = vi.fn();
     const onStatus = vi.fn();
-    
+
     httpService.streamJobLogs("job-123", onLine, onStatus);
-    
-    await new Promise(resolve => setTimeout(resolve, 10));
-    
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
     // Should pass ["bearer", "ws_test-ticket-123"]
     expect(wsProtocols).toEqual(["bearer", "ws_test-ticket-123"]);
   });
 
   it("request uses credentials: include for cookie auth", async () => {
-    let fetchInit: RequestInit | null = null;
-    
-    vi.stubGlobal("fetch", vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
-      fetchInit = init;
-      return jsonResponse(200, { items: [], total: 0 });
-    }));
+    const fetchInitRef = { current: undefined as RequestInit | undefined };
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+        fetchInitRef.current = init;
+        return jsonResponse(200, { items: [], total: 0 });
+      }),
+    );
 
     await httpService.listJobs({});
-    
-    expect(fetchInit?.credentials).toBe("include");
+
+    expect(fetchInitRef.current?.credentials).toBe("include");
     // Should NOT have Authorization header
-    expect(fetchInit?.headers).not.toHaveProperty("Authorization");
+    expect(fetchInitRef.current?.headers).not.toHaveProperty("Authorization");
   });
 
   it("streamJobLogs handles ticket fetch failure gracefully", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Network error")));
-    
+
     const onLine = vi.fn();
     const onStatus = vi.fn();
-    
+
     httpService.streamJobLogs("job-123", onLine, onStatus);
-    
-    await new Promise(resolve => setTimeout(resolve, 10));
-    
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
     // Should call onStatus with "closed" on error
     expect(onStatus).toHaveBeenCalledWith("connecting");
     expect(onStatus).toHaveBeenCalledWith("closed");

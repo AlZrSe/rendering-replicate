@@ -125,28 +125,28 @@ export async function createJob(page: Page, job: JobData = defaultJob): Promise<
   await page.click('a[href="/jobs/new"]');
   await expect(page).toHaveURL("/jobs/new");
 
-  await page.fill('#name', job.name);
-  await page.fill('#command', job.command);
-  await page.fill('#working_dir', job.working_dir);
-  await page.fill('#gpus', String(job.gpus));
-  await page.fill('#cpus', String(job.cpus));
-  await page.fill('#memory_gb', String(job.memory_gb));
+  await page.fill("#name", job.name);
+  await page.fill("#command", job.command);
+  await page.fill("#working_dir", job.working_dir);
+  await page.fill("#gpus", String(job.gpus));
+  await page.fill("#cpus", String(job.cpus));
+  await page.fill("#memory_gb", String(job.memory_gb));
 
   if (job.vram_gb !== undefined) {
-    await page.fill('#vram_gb', String(job.vram_gb));
+    await page.fill("#vram_gb", String(job.vram_gb));
   }
 
   if (job.input) {
-    await page.fill('#input', job.input);
+    await page.fill("#input", job.input);
   }
   if (job.output) {
-    await page.fill('#output', job.output);
+    await page.fill("#output", job.output);
   }
   if (job.max_retries !== undefined) {
-    await page.fill('#max_retries', String(job.max_retries));
+    await page.fill("#max_retries", String(job.max_retries));
   }
   if (job.retry_delay_seconds !== undefined) {
-    await page.fill('#retry_delay_seconds', String(job.retry_delay_seconds));
+    await page.fill("#retry_delay_seconds", String(job.retry_delay_seconds));
   }
 
   await page.click('button:has-text("Submit job")');

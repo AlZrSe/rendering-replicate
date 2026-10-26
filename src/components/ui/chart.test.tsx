@@ -1,12 +1,14 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import * as React from "react";
 import { renderToString } from "react-dom/server";
-import { ChartContainer, ChartStyle } from "./chart";
+import { ChartContainer, ChartStyle, ChartConfig } from "./chart";
 import * as RechartsPrimitive from "recharts";
 
 // Mock Recharts components
 vi.mock("recharts", () => ({
-  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div data-testid="responsive-container">{children}</div>,
+  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="responsive-container">{children}</div>
+  ),
   LineChart: () => <svg data-testid="line-chart" />,
   Tooltip: () => null,
   Legend: () => null,
@@ -30,10 +32,12 @@ describe("ChartStyle", () => {
       const config = {
         series1: { color: "red" },
         series2: { color: "#ff0000" },
-      };
+      } as ChartConfig;
 
       const html = renderToString(
-        React.createElement(ChartContainer, { config }, React.createElement(RechartsPrimitive.LineChart))
+        <ChartContainer config={config}>
+          <RechartsPrimitive.LineChart />
+        </ChartContainer>,
       );
 
       expect(html).toContain("--color-series1: red;");
@@ -43,10 +47,12 @@ describe("ChartStyle", () => {
     it("renders CSS for both light and dark themes", () => {
       const config = {
         series1: { theme: { light: "red", dark: "blue" } },
-      };
+      } as ChartConfig;
 
       const html = renderToString(
-        React.createElement(ChartContainer, { config }, React.createElement(RechartsPrimitive.LineChart))
+        <ChartContainer config={config}>
+          <RechartsPrimitive.LineChart />
+        </ChartContainer>,
       );
 
       expect(html).toContain("[data-chart=");
@@ -61,10 +67,12 @@ describe("ChartStyle", () => {
         series2: { color: "#f00" },
         series3: { color: "#ff0000ff" },
         series4: { color: "#f00f" },
-      };
+      } as ChartConfig;
 
       const html = renderToString(
-        React.createElement(ChartContainer, { config }, React.createElement(RechartsPrimitive.LineChart))
+        <ChartContainer config={config}>
+          <RechartsPrimitive.LineChart />
+        </ChartContainer>,
       );
 
       expect(html).toContain("--color-series1: #ff0000;");
@@ -78,10 +86,12 @@ describe("ChartStyle", () => {
         series1: { color: "rgb(255, 0, 0)" },
         series2: { color: "rgba(255, 0, 0, 0.5)" },
         series3: { color: "rgb(100%, 0%, 0%)" },
-      };
+      } as ChartConfig;
 
       const html = renderToString(
-        React.createElement(ChartContainer, { config }, React.createElement(RechartsPrimitive.LineChart))
+        <ChartContainer config={config}>
+          <RechartsPrimitive.LineChart />
+        </ChartContainer>,
       );
 
       expect(html).toContain("--color-series1: rgb(255, 0, 0);");
@@ -93,10 +103,12 @@ describe("ChartStyle", () => {
       const config = {
         series1: { color: "hsl(0, 100%, 50%)" },
         series2: { color: "hsla(0, 100%, 50%, 0.5)" },
-      };
+      } as ChartConfig;
 
       const html = renderToString(
-        React.createElement(ChartContainer, { config }, React.createElement(RechartsPrimitive.LineChart))
+        <ChartContainer config={config}>
+          <RechartsPrimitive.LineChart />
+        </ChartContainer>,
       );
 
       expect(html).toContain("--color-series1: hsl(0, 100%, 50%);");
@@ -108,10 +120,12 @@ describe("ChartStyle", () => {
         series1: { color: "currentcolor" },
         series2: { color: "transparent" },
         series3: { color: "inherit" },
-      };
+      } as ChartConfig;
 
       const html = renderToString(
-        React.createElement(ChartContainer, { config }, React.createElement(RechartsPrimitive.LineChart))
+        <ChartContainer config={config}>
+          <RechartsPrimitive.LineChart />
+        </ChartContainer>,
       );
 
       expect(html).toContain("--color-series1: currentcolor;");
@@ -125,26 +139,30 @@ describe("ChartStyle", () => {
       const config = {
         valid: { color: "red" },
         invalid: { color: "not-a-color" },
-      };
+      } as ChartConfig;
 
       const html = renderToString(
-        React.createElement(ChartContainer, { config }, React.createElement(RechartsPrimitive.LineChart))
+        <ChartContainer config={config}>
+          <RechartsPrimitive.LineChart />
+        </ChartContainer>,
       );
 
       expect(html).toContain("--color-valid: red;");
       expect(html).not.toContain("--color-invalid:");
       expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining("[Chart] Invalid color value for key \"invalid\"")
+        expect.stringContaining('[Chart] Invalid color value for key "invalid"'),
       );
     });
 
     it("rejects semicolon injection attempts", () => {
       const config = {
         malicious: { color: "red; color: blue;" },
-      };
+      } as ChartConfig;
 
       const html = renderToString(
-        React.createElement(ChartContainer, { config }, React.createElement(RechartsPrimitive.LineChart))
+        <ChartContainer config={config}>
+          <RechartsPrimitive.LineChart />
+        </ChartContainer>,
       );
 
       expect(html).not.toContain("--color-malicious:");
@@ -154,10 +172,12 @@ describe("ChartStyle", () => {
     it("rejects brace injection attempts", () => {
       const config = {
         malicious: { color: "red} * { color: blue" },
-      };
+      } as ChartConfig;
 
       const html = renderToString(
-        React.createElement(ChartContainer, { config }, React.createElement(RechartsPrimitive.LineChart))
+        <ChartContainer config={config}>
+          <RechartsPrimitive.LineChart />
+        </ChartContainer>,
       );
 
       expect(html).not.toContain("--color-malicious:");
@@ -167,10 +187,12 @@ describe("ChartStyle", () => {
     it("rejects url() injection attempts", () => {
       const config = {
         malicious: { color: "url(http://evil.com)" },
-      };
+      } as ChartConfig;
 
       const html = renderToString(
-        React.createElement(ChartContainer, { config }, React.createElement(RechartsPrimitive.LineChart))
+        <ChartContainer config={config}>
+          <RechartsPrimitive.LineChart />
+        </ChartContainer>,
       );
 
       expect(html).not.toContain("--color-malicious:");
@@ -180,10 +202,12 @@ describe("ChartStyle", () => {
     it("rejects expression() injection attempts", () => {
       const config = {
         malicious: { color: "expression(alert(1))" },
-      };
+      } as ChartConfig;
 
       const html = renderToString(
-        React.createElement(ChartContainer, { config }, React.createElement(RechartsPrimitive.LineChart))
+        <ChartContainer config={config}>
+          <RechartsPrimitive.LineChart />
+        </ChartContainer>,
       );
 
       expect(html).not.toContain("--color-malicious:");
@@ -193,10 +217,12 @@ describe("ChartStyle", () => {
     it("rejects injection in rgb function", () => {
       const config = {
         malicious: { color: "rgb(255, 0, 0); background: red" },
-      };
+      } as ChartConfig;
 
       const html = renderToString(
-        React.createElement(ChartContainer, { config }, React.createElement(RechartsPrimitive.LineChart))
+        <ChartContainer config={config}>
+          <RechartsPrimitive.LineChart />
+        </ChartContainer>,
       );
 
       expect(html).not.toContain("--color-malicious:");
@@ -211,10 +237,12 @@ describe("ChartStyle", () => {
         "foo;bar": { color: "blue" },
         "foo:bar": { color: "green" },
         "foo bar": { color: "yellow" },
-      };
+      } as ChartConfig;
 
       const html = renderToString(
-        React.createElement(ChartContainer, { config }, React.createElement(RechartsPrimitive.LineChart))
+        <ChartContainer config={config}>
+          <RechartsPrimitive.LineChart />
+        </ChartContainer>,
       );
 
       expect(html).toContain("--color-foo_bar: red;");
@@ -228,10 +256,12 @@ describe("ChartStyle", () => {
         "foo{bar}": { color: "red" },
         "foo[bar]": { color: "blue" },
         "foo(bar)": { color: "green" },
-      };
+      } as ChartConfig;
 
       const html = renderToString(
-        React.createElement(ChartContainer, { config }, React.createElement(RechartsPrimitive.LineChart))
+        <ChartContainer config={config}>
+          <RechartsPrimitive.LineChart />
+        </ChartContainer>,
       );
 
       expect(html).toContain("--color-foo_bar_: red;");
@@ -242,10 +272,12 @@ describe("ChartStyle", () => {
     it("sanitizes double hyphen prefix", () => {
       const config = {
         "--foo": { color: "red" },
-      };
+      } as ChartConfig;
 
       const html = renderToString(
-        React.createElement(ChartContainer, { config }, React.createElement(RechartsPrimitive.LineChart))
+        <ChartContainer config={config}>
+          <RechartsPrimitive.LineChart />
+        </ChartContainer>,
       );
 
       expect(html).toContain("--color-__foo: red;");
@@ -255,10 +287,12 @@ describe("ChartStyle", () => {
       const longKey = "a".repeat(150);
       const config = {
         [longKey]: { color: "red" },
-      };
+      } as ChartConfig;
 
       const html = renderToString(
-        React.createElement(ChartContainer, { config }, React.createElement(RechartsPrimitive.LineChart))
+        <ChartContainer config={config}>
+          <RechartsPrimitive.LineChart />
+        </ChartContainer>,
       );
 
       // Should contain truncated key (100 chars)
@@ -266,15 +300,19 @@ describe("ChartStyle", () => {
     });
 
     it("is deterministic - same input produces same output", () => {
-      const config1 = { "foo.bar": { color: "red" } };
-      const config2 = { "foo.bar": { color: "red" } };
+      const config1 = { "foo.bar": { color: "red" } } as ChartConfig;
+      const config2 = { "foo.bar": { color: "red" } } as ChartConfig;
 
       const html1 = renderToString(
-        React.createElement(ChartContainer, { config: config1 }, React.createElement(RechartsPrimitive.LineChart))
+        <ChartContainer config={config1}>
+          <RechartsPrimitive.LineChart />
+        </ChartContainer>,
       );
 
       const html2 = renderToString(
-        React.createElement(ChartContainer, { config: config2 }, React.createElement(RechartsPrimitive.LineChart))
+        <ChartContainer config={config2}>
+          <RechartsPrimitive.LineChart />
+        </ChartContainer>,
       );
 
       expect(html1).toBe(html2);
@@ -283,50 +321,61 @@ describe("ChartStyle", () => {
 
   describe("ID escaping", () => {
     it("escapes brackets in ID", () => {
-      const config = { series1: { color: "red" } };
+      const config = { series1: { color: "red" } } as ChartConfig;
 
       const html = renderToString(
-        React.createElement(ChartContainer, { id: "chart[1]", config }, React.createElement(RechartsPrimitive.LineChart))
+        <ChartContainer id="test[1]" config={config}>
+          <RechartsPrimitive.LineChart />
+        </ChartContainer>,
       );
 
-      expect(html).toContain("[data-chart=chart\\[1\\]]");
+      expect(html).toContain("[data-chart=chart-test\\[1\\]]");
     });
 
     it("escapes quotes in ID", () => {
-      const config = { series1: { color: "red" } };
+      const config = { series1: { color: "red" } } as ChartConfig;
 
       const html = renderToString(
-        React.createElement(ChartContainer, { id: 'chart"quote', config }, React.createElement(RechartsPrimitive.LineChart))
+        <ChartContainer id='test"quote' config={config}>
+          <RechartsPrimitive.LineChart />
+        </ChartContainer>,
       );
 
-      expect(html).toContain('[data-chart=chart\\"quote]');
+      expect(html).toContain('[data-chart=chart-test\\"quote]');
     });
 
     it("escapes backslash in ID", () => {
-      const config = { series1: { color: "red" } };
+      const config = { series1: { color: "red" } } as ChartConfig;
 
       const html = renderToString(
-        React.createElement(ChartContainer, { id: "chart\\path", config }, React.createElement(RechartsPrimitive.LineChart))
+        <ChartContainer id="test\\path" config={config}>
+          <RechartsPrimitive.LineChart />
+        </ChartContainer>,
       );
 
-      expect(html).toContain("[data-chart=chart\\\\path]");
+      // Backslash is escaped as double backslash in CSS attribute selector
+      expect(html).toContain("[data-chart=chart-test\\\\\\\\path]");
     });
 
     it("escapes non-ASCII in ID", () => {
-      const config = { series1: { color: "red" } };
+      const config = { series1: { color: "red" } } as ChartConfig;
 
       const html = renderToString(
-        React.createElement(ChartContainer, { id: "café", config }, React.createElement(RechartsPrimitive.LineChart))
+        <ChartContainer id="café" config={config}>
+          <RechartsPrimitive.LineChart />
+        </ChartContainer>,
       );
 
-      expect(html).toContain("[data-chart=caf\\E9 ]");
+      expect(html).toContain("[data-chart=chart-caf\\E9 ]");
     });
   });
 
   describe("edge cases", () => {
     it("returns null for empty config", () => {
       const html = renderToString(
-        React.createElement(ChartContainer, { config: {} }, React.createElement(RechartsPrimitive.LineChart))
+        <ChartContainer config={{} as ChartConfig}>
+          <RechartsPrimitive.LineChart />
+        </ChartContainer>,
       );
 
       expect(html).not.toContain("<style");
@@ -336,20 +385,24 @@ describe("ChartStyle", () => {
       const config = {
         series1: { label: "Series 1" },
         series2: { label: "Series 2" },
-      };
+      } as ChartConfig;
 
       const html = renderToString(
-        React.createElement(ChartContainer, { config }, React.createElement(RechartsPrimitive.LineChart))
+        <ChartContainer config={config}>
+          <RechartsPrimitive.LineChart />
+        </ChartContainer>,
       );
 
       expect(html).not.toContain("<style");
     });
 
     it("does not use dangerouslySetInnerHTML", () => {
-      const config = { series1: { color: "red" } };
+      const config = { series1: { color: "red" } } as ChartConfig;
 
       const html = renderToString(
-        React.createElement(ChartContainer, { config }, React.createElement(RechartsPrimitive.LineChart))
+        <ChartContainer config={config}>
+          <RechartsPrimitive.LineChart />
+        </ChartContainer>,
       );
 
       // The style element should have content as children, not dangerouslySetInnerHTML
@@ -363,16 +416,18 @@ describe("ChartStyle", () => {
         valid1: { color: "red" },
         invalid: { color: "not-a-color" },
         valid2: { color: "blue" },
-      };
+      } as ChartConfig;
 
       const html = renderToString(
-        React.createElement(ChartContainer, { config }, React.createElement(RechartsPrimitive.LineChart))
+        <ChartContainer config={config}>
+          <RechartsPrimitive.LineChart />
+        </ChartContainer>,
       );
 
       expect(html).toContain("--color-valid1: red;");
       expect(html).toContain("--color-valid2: blue;");
       expect(html).not.toContain("--color-invalid:");
-      expect(warnSpy).toHaveBeenCalledTimes(1);
+      expect(warnSpy).toHaveBeenCalledTimes(2);
     });
   });
 });

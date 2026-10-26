@@ -5,6 +5,7 @@ export interface Settings {
   theme: "light" | "dark";
   wsReconnectMs: number;
   pollIntervalMs: number;
+  token?: string;
 }
 
 const KEY = "shc.settings";
@@ -86,6 +87,11 @@ export function setSettings(patch: Partial<Settings>) {
     applyTheme(next.theme);
   }
   listeners.forEach((l) => l(next));
+}
+
+/** Test-only: reset the internal settings cache. */
+export function resetSettingsCache() {
+  cache = null;
 }
 
 export function applyTheme(theme: Settings["theme"]) {

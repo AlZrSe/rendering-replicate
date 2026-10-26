@@ -62,13 +62,21 @@ function LoginPage() {
         toast.error("Cannot reach the cluster backend", {
           description: `Nothing answered at ${apiUrl.trim() || "the configured API URL"}.`,
         });
-      } else if (error instanceof ServiceError && error.error_code === "AUTH_SHARED_TOKEN_INVALID") {
+      } else if (
+        error instanceof ServiceError &&
+        error.error_code === "AUTH_SHARED_TOKEN_INVALID"
+      ) {
         toast.error("Invalid shared token", {
-          description: "The provided shared token is invalid. Please check your credentials and try again.",
+          description:
+            "The provided shared token is invalid. Please check your credentials and try again.",
         });
-      } else if (error instanceof ServiceError && error.error_code === "AUTH_SHARED_TOKEN_NOT_CONFIGURED") {
+      } else if (
+        error instanceof ServiceError &&
+        error.error_code === "AUTH_SHARED_TOKEN_NOT_CONFIGURED"
+      ) {
         toast.error("Shared token not configured on server", {
-          description: "The server administrator needs to set the SHARED_TOKEN environment variable.",
+          description:
+            "The server administrator needs to set the SHARED_TOKEN environment variable.",
         });
       } else {
         toast.error("Could not log in", {

@@ -84,9 +84,11 @@ export function SyncthingDashboard() {
         <div className="space-y-1">
           <CardTitle className="flex items-center gap-2">
             Syncthing Dashboard
-            <span className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${
-              guiReachable ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
-            }`}>
+            <span
+              className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${
+                guiReachable ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
+              }`}
+            >
               {guiReachable ? (
                 <>
                   <Wifi className="size-3" />
@@ -150,11 +152,7 @@ export function SyncthingDashboard() {
                     : "The Syncthing dashboard is loading..."}
                 </p>
                 {guiUrl && (
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => openInNewTab(guiUrl)}
-                  >
+                  <Button variant="default" size="sm" onClick={() => openInNewTab(guiUrl)}>
                     <ExternalLink className="size-4 mr-2" />
                     Open in New Tab
                   </Button>
@@ -168,8 +166,7 @@ export function SyncthingDashboard() {
             <span className="font-medium">Jobs Folder: </span>
             {data.jobs_folder.exists ? (
               <>
-                <span className="text-green-600">●</span>{" "}
-                {data.jobs_folder.state_files} state files
+                <span className="text-green-600">●</span> {data.jobs_folder.state_files} state files
               </>
             ) : (
               <span className="text-red-600">Not found</span>
@@ -179,8 +176,8 @@ export function SyncthingDashboard() {
             <span className="font-medium">Nodes Folder: </span>
             {data.nodes_folder.exists ? (
               <>
-                <span className="text-green-600">●</span>{" "}
-                {data.nodes_folder.state_files} state files
+                <span className="text-green-600">●</span> {data.nodes_folder.state_files} state
+                files
               </>
             ) : (
               <span className="text-red-600">Not found</span>

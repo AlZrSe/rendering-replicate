@@ -10,7 +10,11 @@ test.describe("Dashboard", () => {
   test("should load dashboard", async ({ page }) => {
     await page.goto("/");
     await expect(page).toHaveURL("/");
-    await expect(page.locator('p.font-mono.text-xs.text-muted-foreground:has-text("cluster workload overview")')).toBeVisible();
+    await expect(
+      page.locator(
+        'p.font-mono.text-xs.text-muted-foreground:has-text("cluster workload overview")',
+      ),
+    ).toBeVisible();
   });
 
   test("should show navigation", async ({ page }) => {
@@ -26,48 +30,80 @@ test.describe("Dashboard", () => {
     await page.goto("/");
 
     // Use specific selectors for MetricCard labels (p.text-xs.font-medium.tracking-wide.text-muted-foreground.uppercase)
-    await expect(page.locator('p.text-xs.font-medium.tracking-wide.text-muted-foreground.uppercase:has-text("Running")')).toBeVisible();
-    await expect(page.locator('p.text-xs.font-medium.tracking-wide.text-muted-foreground.uppercase:has-text("Queued")')).toBeVisible();
-    await expect(page.locator('p.text-xs.font-medium.tracking-wide.text-muted-foreground.uppercase:has-text("Failed")')).toBeVisible();
-    await expect(page.locator('p.text-xs.font-medium.tracking-wide.text-muted-foreground.uppercase:has-text("Nodes online")')).toBeVisible();
+    await expect(
+      page.locator(
+        'p.text-xs.font-medium.tracking-wide.text-muted-foreground.uppercase:has-text("Running")',
+      ),
+    ).toBeVisible();
+    await expect(
+      page.locator(
+        'p.text-xs.font-medium.tracking-wide.text-muted-foreground.uppercase:has-text("Queued")',
+      ),
+    ).toBeVisible();
+    await expect(
+      page.locator(
+        'p.text-xs.font-medium.tracking-wide.text-muted-foreground.uppercase:has-text("Failed")',
+      ),
+    ).toBeVisible();
+    await expect(
+      page.locator(
+        'p.text-xs.font-medium.tracking-wide.text-muted-foreground.uppercase:has-text("Nodes online")',
+      ),
+    ).toBeVisible();
   });
 
   test("should show node statistics", async ({ page }) => {
     await page.goto("/");
 
-    await expect(page.locator('p.text-xs.font-medium.tracking-wide.text-muted-foreground.uppercase:has-text("Nodes online")')).toBeVisible();
+    await expect(
+      page.locator(
+        'p.text-xs.font-medium.tracking-wide.text-muted-foreground.uppercase:has-text("Nodes online")',
+      ),
+    ).toBeVisible();
   });
 
   test("should show GPU utilization", async ({ page }) => {
     await page.goto("/");
 
-    await expect(page.locator('p.text-xs.font-medium.tracking-wide.text-muted-foreground.uppercase:has-text("Nodes online")')).toBeVisible();
+    await expect(
+      page.locator(
+        'p.text-xs.font-medium.tracking-wide.text-muted-foreground.uppercase:has-text("Nodes online")',
+      ),
+    ).toBeVisible();
   });
 
   test("should navigate to jobs page", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator('p.font-mono.text-xs.text-muted-foreground:has-text("cluster workload overview")')).toBeVisible();
+    await expect(
+      page.locator(
+        'p.font-mono.text-xs.text-muted-foreground:has-text("cluster workload overview")',
+      ),
+    ).toBeVisible();
   });
 
   test("should navigate to nodes page", async ({ page }) => {
     await page.goto("/");
     await page.click('a[href="/nodes"]:has-text("Nodes")');
     await expect(page).toHaveURL("/nodes");
-    await expect(page.locator("h1:has-text(\"Nodes\")")).toBeVisible();
+    await expect(page.locator('h1:has-text("Nodes")')).toBeVisible();
   });
 
   test("should navigate to settings page", async ({ page }) => {
     await page.goto("/");
     await page.click('a[href="/settings"]:has-text("Settings")');
     await expect(page).toHaveURL("/settings");
-    await expect(page.locator("h1:has-text(\"Settings\")")).toBeVisible();
+    await expect(page.locator('h1:has-text("Settings")')).toBeVisible();
   });
 
   test("should show jobs table on dashboard", async ({ page }) => {
     await page.goto("/");
 
     await expect(page.getByRole("heading", { name: "Jobs" })).toBeVisible();
-    await expect(page.locator('p.font-mono.text-xs.text-muted-foreground:has-text("cluster workload overview")')).toBeVisible();
+    await expect(
+      page.locator(
+        'p.font-mono.text-xs.text-muted-foreground:has-text("cluster workload overview")',
+      ),
+    ).toBeVisible();
     // Should have jobs table with seeded data
     await expect(page.locator("tbody a").first()).toBeVisible({ timeout: 10000 });
   });

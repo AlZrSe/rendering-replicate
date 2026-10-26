@@ -3,6 +3,7 @@ import { mockService, httpService } from "../../src/services/testing";
 import { resetServiceCache } from "../../src/services";
 import { getSettings, setSettings } from "../../src/lib/settings";
 import type { JobSpec } from "../../src/lib/types";
+import type { Settings } from "../../src/lib/settings";
 
 // Test data
 //
@@ -202,7 +203,13 @@ describe("Services Layer Integration Tests", () => {
     resetServiceCache();
     // The frontend no longer auto-injects the localhost bypass token (issue #150),
     // so the mock service needs an explicit token to exercise its data paths.
-    setSettings({ token: "test-token-12345" });
+    setSettings({
+      token: "test-token-12345",
+      apiBaseUrl: "http://localhost:8000/api/v1",
+      theme: "dark",
+      wsReconnectMs: 3000,
+      pollIntervalMs: 7000,
+    });
   });
 
   afterAll(() => {
@@ -279,7 +286,13 @@ describe("Services Layer Integration Tests", () => {
 
   describe("HTTP Service (stubbed transport, no backend required)", () => {
     beforeAll(() => {
-      setSettings({ apiBaseUrl: BACKEND_URL, token: "localhost-no-auth" });
+      setSettings({
+        apiBaseUrl: BACKEND_URL,
+        token: "localhost-no-auth",
+        theme: "dark",
+        wsReconnectMs: 3000,
+        pollIntervalMs: 7000,
+      });
     });
 
     // `vi.unstubAllGlobals()` is explicit because `restoreMocks` in
@@ -453,7 +466,13 @@ describe("Settings Integration", () => {
     localStorage.clear();
 
     const testUrl = "http://test:8000/api/v1";
-    setSettings({ apiBaseUrl: testUrl, token: "test-token" });
+    setSettings({
+      apiBaseUrl: testUrl,
+      token: "test-token",
+      theme: "dark",
+      wsReconnectMs: 3000,
+      pollIntervalMs: 7000,
+    });
 
     const stored = localStorage.getItem("shc.settings");
     expect(stored).toBeTruthy();
@@ -469,7 +488,12 @@ describe("Settings Integration", () => {
     localStorage.clear();
     localStorage.setItem(
       "shc.settings",
-      JSON.stringify({ apiBaseUrl: "http://localhost:8000/api/v1" }),
+      JSON.stringify({
+        apiBaseUrl: "http://localhost:8000/api/v1",
+        theme: "dark",
+        wsReconnectMs: 3000,
+        pollIntervalMs: 7000,
+      }),
     );
 
     const { getSettings } = await import("../../src/lib/settings");

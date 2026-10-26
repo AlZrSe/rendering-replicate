@@ -12,7 +12,9 @@ test.describe("Profiles", () => {
     await expect(page).toHaveURL("/profiles");
 
     await expect(page.getByRole("heading", { name: "VASP — standard relaxation" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "LAMMPS — molecular dynamics (GPU)" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "LAMMPS — molecular dynamics (GPU)" }),
+    ).toBeVisible();
     await expect(page.getByRole("heading", { name: "GROMACS — mdrun" })).toBeVisible();
   });
 

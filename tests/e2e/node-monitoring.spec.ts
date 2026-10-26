@@ -1,11 +1,5 @@
 import { test, expect } from "@playwright/test";
-import {
-  login,
-  TEST_TOKEN,
-  getNodes,
-  getNodeMetrics,
-  resetAuthState,
-} from "./test-utils";
+import { login, TEST_TOKEN, getNodes, getNodeMetrics, resetAuthState } from "./test-utils";
 
 test.describe("Node Monitoring", () => {
   test.beforeEach(async ({ page, baseURL }) => {
@@ -34,7 +28,9 @@ test.describe("Node Monitoring", () => {
     // Verify node details
     await expect(page.locator("text=gpu-node-1").first()).toBeVisible();
     // Status may be DEGRADED if heartbeat is old
-    await expect(page.locator("text=DEGRADED").first().or(page.locator("text=ONLINE").first())).toBeVisible();
+    await expect(
+      page.locator("text=DEGRADED").first().or(page.locator("text=ONLINE").first()),
+    ).toBeVisible();
   });
 
   test("should show node metrics", async ({ page }) => {
@@ -57,12 +53,71 @@ test.describe("Node Monitoring", () => {
 
     // gpu-node-1, gpu-node-2, cpu-node-1 may be ONLINE or DEGRADED
     // Status badge is a sibling of the node name container
-    await expect(page.locator("text=gpu-node-1").first().locator("..").locator("..").locator("text=DEGRADED").first().or(page.locator("text=gpu-node-1").first().locator("..").locator("..").locator("text=ONLINE").first())).toBeVisible();
-    await expect(page.locator("text=gpu-node-2").first().locator("..").locator("..").locator("text=DEGRADED").first().or(page.locator("text=gpu-node-2").first().locator("..").locator("..").locator("text=ONLINE").first())).toBeVisible();
-    await expect(page.locator("text=cpu-node-1").first().locator("..").locator("..").locator("text=DEGRADED").first().or(page.locator("text=cpu-node-1").first().locator("..").locator("..").locator("text=ONLINE").first())).toBeVisible();
+    await expect(
+      page
+        .locator("text=gpu-node-1")
+        .first()
+        .locator("..")
+        .locator("..")
+        .locator("text=DEGRADED")
+        .first()
+        .or(
+          page
+            .locator("text=gpu-node-1")
+            .first()
+            .locator("..")
+            .locator("..")
+            .locator("text=ONLINE")
+            .first(),
+        ),
+    ).toBeVisible();
+    await expect(
+      page
+        .locator("text=gpu-node-2")
+        .first()
+        .locator("..")
+        .locator("..")
+        .locator("text=DEGRADED")
+        .first()
+        .or(
+          page
+            .locator("text=gpu-node-2")
+            .first()
+            .locator("..")
+            .locator("..")
+            .locator("text=ONLINE")
+            .first(),
+        ),
+    ).toBeVisible();
+    await expect(
+      page
+        .locator("text=cpu-node-1")
+        .first()
+        .locator("..")
+        .locator("..")
+        .locator("text=DEGRADED")
+        .first()
+        .or(
+          page
+            .locator("text=cpu-node-1")
+            .first()
+            .locator("..")
+            .locator("..")
+            .locator("text=ONLINE")
+            .first(),
+        ),
+    ).toBeVisible();
 
     // offline-node should be OFFLINE
-    await expect(page.locator("text=offline-node").first().locator("..").locator("..").locator("text=OFFLINE").first()).toBeVisible();
+    await expect(
+      page
+        .locator("text=offline-node")
+        .first()
+        .locator("..")
+        .locator("..")
+        .locator("text=OFFLINE")
+        .first(),
+    ).toBeVisible();
   });
 
   test("should show current job assignment", async ({ page }) => {

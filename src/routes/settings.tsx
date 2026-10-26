@@ -16,8 +16,7 @@ export const Route = createFileRoute("/settings")({
       { title: "Settings · Scientific Home Cluster" },
       {
         name: "description",
-        content:
-          "Configure the cluster API base URL, polling interval, reconnect delay and theme.",
+        content: "Configure the cluster API base URL, polling interval, reconnect delay and theme.",
       },
       { property: "og:title", content: "Settings · Scientific Home Cluster" },
       {

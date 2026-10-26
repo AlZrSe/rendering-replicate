@@ -62,7 +62,6 @@ describe("isValidCSSColor", () => {
 
     it("rejects invalid hex lengths", () => {
       expect(isValidCSSColor("#ff")).toBe(false);
-      expect(isValidCSSColor("#ffff")).toBe(false);
       expect(isValidCSSColor("#fffff")).toBe(false);
       expect(isValidCSSColor("#fffffff")).toBe(false);
       expect(isValidCSSColor("#fffffffff")).toBe(false);
