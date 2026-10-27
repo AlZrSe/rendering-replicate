@@ -49,9 +49,7 @@ export const defaultJob: JobData = {
  * backend on bypass hosts.
  */
 export async function login(page: Page, token: string = TEST_TOKEN): Promise<void> {
-  // resetAuthState already navigates to /login, so we don't need to navigate again.
-  // Just wait for the form to be ready.
-  await page.waitForSelector('input[id="sharedToken"]', { timeout: 30000 });
+  // resetAuthState already navigates to /login and waits for the form.
   await page.fill('input[id="sharedToken"]', token);
   await page.click('button:has-text("Connect")');
   await expect(page).toHaveURL("/");
@@ -76,6 +74,10 @@ export async function login(page: Page, token: string = TEST_TOKEN): Promise<voi
  *
  * We navigate to "/login" directly (not "/") to avoid the Shell's redirect
  * which would cause a double navigation and potential hydration issues.
+ *
+ * We wait for the login form to be visible after clearing localStorage to ensure
+ * the React app has fully hydrated with the correct localStorage state before
+ * the test proceeds.
  */
 export async function resetAuthState(page: Page, baseURL?: string): Promise<void> {
   await page.context().clearCookies();
@@ -85,6 +87,10 @@ export async function resetAuthState(page: Page, baseURL?: string): Promise<void
     localStorage.clear();
     localStorage.removeItem("shc.loggedOut");
   });
+  // Wait for the login form to be visible, ensuring the React app has hydrated
+  // with the cleared localStorage state. This prevents race conditions where the
+  // app hydrates before localStorage is cleared and makes incorrect routing decisions.
+  await page.waitForSelector('input[id="sharedToken"]', { timeout: 30000 });
 }
 
 export async function gotoSettings(page: Page) {
