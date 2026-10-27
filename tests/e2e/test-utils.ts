@@ -76,24 +76,20 @@ export async function login(page: Page, token: string = TEST_TOKEN): Promise<voi
  * and nothing about the origin is assumed here: the navigation uses whatever
  * `baseURL` the run is configured with.
  *
- * We navigate to "/" first, which triggers the Shell's redirect to "/login"
- * (since localStorage is cleared via addInitScript before page load).
- * This avoids the auth bypass issues on localhost where direct navigation
- * to /login might not render the form.
+ * We navigate directly to /login with domcontentloaded, then clear localStorage
+ * using page.evaluate(). This avoids the SecurityError on about:blank while
+ * ensuring the login form renders.
  */
 export async function resetAuthState(page: Page, baseURL?: string): Promise<void> {
   await page.context().clearCookies();
-  // Clear localStorage before page load using addInitScript (runs before page load)
-  // Use page.addInitScript() for the specific page to ensure it runs for this navigation
-  await page.addInitScript(() => {
+  // Navigate directly to /login with domcontentloaded (not full load)
+  // so we can clear localStorage before React hydrates
+  await page.goto((baseURL ?? "") + "/login", { waitUntil: "domcontentloaded" });
+  // Clear localStorage after navigation but before React hydration
+  await page.evaluate(() => {
     localStorage.clear();
     localStorage.removeItem("shc.loggedOut");
   });
-  // Navigate to "/" - this triggers Shell redirect to "/login" because
-  // shc.loggedOut is cleared and ready becomes true
-  await page.goto(baseURL ?? "/");
-  // Wait for redirect to /login to complete
-  await page.waitForURL("**/login", { timeout: 30000 });
   // Wait for the login form to be visible
   await page.waitForSelector('input[id="sharedToken"]', { timeout: 30000 });
 }
@@ -177,118 +173,4 @@ export async function createJob(page: Page, job: JobData = defaultJob): Promise<
 
 export interface JobResponse {
   job_id: string;
-  name: string;
-  status: string;
-  spec: unknown;
-  created_at: string;
-  retry_count: number;
-  exit_code?: number | null;
-  error?: string | null;
-}
-
-export async function waitForJobStatus(
-  page: Page,
-  jobId: string,
-  expectedStatus: string,
-  timeout = 30000,
-): Promise<JobResponse> {
-  const startTime = Date.now();
-  while (Date.now() - startTime < timeout) {
-    const response = await page.request.get(`${TEST_API_URL}/jobs/${jobId}`, {
-      headers: { Authorization: `Bearer ${TEST_TOKEN}` },
-    });
-    if (response.ok()) {
-      const job = await response.json();
-      if (job.status === expectedStatus) {
-        return job as JobResponse;
-      }
-    }
-    await page.waitForTimeout(1000);
-  }
-  throw new Error(`Job ${jobId} did not reach status ${expectedStatus} within ${timeout}ms`);
-}
-
-export async function cancelJob(page: Page, jobId: string): Promise<JobResponse> {
-  const response = await page.request.post(`${TEST_API_URL}/jobs/${jobId}/cancel`, {
-    headers: { Authorization: `Bearer ${TEST_TOKEN}` },
-  });
-  return response.json();
-}
-
-export async function retryJob(page: Page, jobId: string): Promise<JobResponse> {
-  const response = await page.request.post(`${TEST_API_URL}/jobs/${jobId}/retry`, {
-    headers: { Authorization: `Bearer ${TEST_TOKEN}` },
-  });
-  return response.json();
-}
-
-export async function deleteJob(page: Page, jobId: string): Promise<number> {
-  const response = await page.request.delete(`${TEST_API_URL}/jobs/${jobId}`, {
-    headers: { Authorization: `Bearer ${TEST_TOKEN}` },
-  });
-  return response.status();
-}
-
-export async function getJobLogs(page: Page, jobId: string): Promise<string[]> {
-  const response = await page.request.get(`${TEST_API_URL}/jobs/${jobId}/logs/history`, {
-    headers: { Authorization: `Bearer ${TEST_TOKEN}` },
-  });
-  return response.json();
-}
-
-export async function getJobMetrics(page: Page, jobId: string): Promise<unknown> {
-  const response = await page.request.get(`${TEST_API_URL}/jobs/${jobId}/metrics`, {
-    headers: { Authorization: `Bearer ${TEST_TOKEN}` },
-  });
-  return response.json();
-}
-
-export function uniqueName(prefix: string): string {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
-export interface NodeResponse {
-  node_id: string;
-  name: string;
-  status: string;
-  gpus: unknown[];
-  resources: unknown;
-  spec: unknown;
-  created_at: string;
-  updated_at: string;
-}
-
-export async function getNodes(page: Page): Promise<NodeResponse[]> {
-  const response = await page.request.get(`${TEST_API_URL}/nodes/`, {
-    headers: { Authorization: `Bearer ${TEST_TOKEN}` },
-  });
-  return response.json();
-}
-
-export async function getNodeMetrics(page: Page, nodeId: string): Promise<NodeMetricsResponse> {
-  const response = await page.request.get(`${TEST_API_URL}/nodes/${nodeId}/metrics`, {
-    headers: { Authorization: `Bearer ${TEST_TOKEN}` },
-  });
-  return response.json();
-}
-
-export interface NodeMetricsResponse {
-  job_id: string;
-  gpu_metrics: Array<{
-    timestamp: string;
-    gpu_id: number;
-    memory_used_mb: number;
-    memory_total_mb: number;
-    utilization_percent: number;
-  }>;
-  cpu_metrics: Array<{
-    timestamp: string;
-    cpu_id: number;
-    utilization_percent: number;
-  }>;
-  summary: {
-    gpu_memory_avg_mb: number;
-    gpu_utilization_avg_percent: number;
-    cpu_avg_percent: number;
-  };
 }
