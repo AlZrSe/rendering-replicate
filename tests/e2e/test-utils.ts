@@ -83,12 +83,8 @@ export async function login(page: Page, token: string = TEST_TOKEN): Promise<voi
  */
 export async function resetAuthState(page, baseURL) {
   await page.context().clearCookies();
-  await page.addInitScript(() => {
-    localStorage.clear();
-    localStorage.removeItem('shc.loggedOut');
-  });
   await page.goto((baseURL || '') + '/login');
-  await page.waitForSelector('input#sharedToken', { state: 'attached', timeout: 30000 });
+  await page.waitForSelector('input#sharedToken', { timeout: 30000 });
 }
 
 export async function gotoSettings(page: Page) {
