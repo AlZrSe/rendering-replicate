@@ -49,7 +49,8 @@ export const defaultJob: JobData = {
  * backend on bypass hosts.
  */
 export async function login(page: Page, token: string = TEST_TOKEN): Promise<void> {
-  // resetAuthState already navigates to /login and waits for the form.
+  await page.goto("/login");
+  await page.waitForSelector('input[id="sharedToken"]', { timeout: 30000 });
   await page.fill('input[id="sharedToken"]', token);
   await page.click('button:has-text("Connect")');
   await expect(page).toHaveURL("/");
@@ -72,25 +73,21 @@ export async function login(page: Page, token: string = TEST_TOKEN): Promise<voi
  * and nothing about the origin is assumed here: the navigation uses whatever
  * `baseURL` the run is configured with.
  *
- * We navigate to "/login" directly (not "/") to avoid the Shell's redirect
- * which would cause a double navigation and potential hydration issues.
- *
- * We wait for the login form to be visible after clearing localStorage to ensure
- * the React app has fully hydrated with the correct localStorage state before
- * the test proceeds.
+ * We navigate to "/" first, which triggers the Shell's redirect to "/login"
+ * (since localStorage is not yet cleared). Then we clear localStorage and
+ * the shc.loggedOut flag so the login form renders.
  */
 export async function resetAuthState(page: Page, baseURL?: string): Promise<void> {
   await page.context().clearCookies();
-  // Navigate directly to /login to avoid Shell redirect from "/" to "/login"
-  await page.goto((baseURL ?? "") + "/login");
+  // Navigate to "/" first - this triggers Shell redirect to "/login"
+  await page.goto(baseURL ?? "/");
+  // Clear localStorage after navigation so the app hydrates with clean state
   await page.evaluate(() => {
     localStorage.clear();
     localStorage.removeItem("shc.loggedOut");
   });
-  // Wait for the login form to be visible, ensuring the React app has hydrated
-  // with the cleared localStorage state. This prevents race conditions where the
-  // app hydrates before localStorage is cleared and makes incorrect routing decisions.
-  await page.waitForSelector('input[id="sharedToken"]', { timeout: 30000 });
+  // Wait for redirect to /login to complete
+  await page.waitForURL("**/login", { timeout: 10000 });
 }
 
 export async function gotoSettings(page: Page) {
