@@ -73,21 +73,22 @@ export async function login(page: Page, token: string = TEST_TOKEN): Promise<voi
  * and nothing about the origin is assumed here: the navigation uses whatever
  * `baseURL` the run is configured with.
  *
- * We navigate to "/" first, which triggers the Shell's redirect to "/login"
- * (since localStorage is not yet cleared). Then we clear localStorage and
- * the shc.loggedOut flag so the login form renders.
+ * We use `addInitScript` to clear localStorage BEFORE the page loads, avoiding
+ * the SecurityError. Then we navigate directly to `/login` (bypassing the
+ * Shell's redirect logic which doesn't trigger on localhost due to auth bypass)
+ * and wait for the login form to be visible.
  */
 export async function resetAuthState(page: Page, baseURL?: string): Promise<void> {
   await page.context().clearCookies();
-  // Navigate to "/" first - this triggers Shell redirect to "/login"
-  await page.goto(baseURL ?? "/");
-  // Clear localStorage after navigation so the app hydrates with clean state
-  await page.evaluate(() => {
+  // Clear localStorage before page load using addInitScript (runs before page load)
+  await page.context().addInitScript(() => {
     localStorage.clear();
     localStorage.removeItem("shc.loggedOut");
   });
-  // Wait for redirect to /login to complete
-  await page.waitForURL("**/login", { timeout: 10000 });
+  // Navigate directly to /login (bypassing Shell redirect which doesn't trigger on localhost)
+  await page.goto((baseURL ?? "") + "/login");
+  // Wait for the login form to be visible
+  await page.waitForSelector('input[id="sharedToken"]', { timeout: 30000 });
 }
 
 export async function gotoSettings(page: Page) {
