@@ -49,7 +49,10 @@ export const defaultJob: JobData = {
  * backend on bypass hosts.
  */
 export async function login(page: Page, token: string = TEST_TOKEN): Promise<void> {
-  await page.goto("/login");
+  // If not already on the login page, navigate there
+  if (!page.url().endsWith("/login")) {
+    await page.goto("/login");
+  }
   await page.waitForSelector('input[id="sharedToken"]', { timeout: 30000 });
   await page.fill('input[id="sharedToken"]', token);
   await page.click('button:has-text("Connect")');
