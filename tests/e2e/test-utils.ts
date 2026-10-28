@@ -75,12 +75,13 @@ export async function login(page: Page, token: string = TEST_TOKEN): Promise<voi
  */
 export async function resetAuthState(page: Page, baseURL?: string): Promise<void> {
   await page.context().clearCookies();
-  await page.goto(baseURL ?? "/");
-  // Clear localStorage and shc.loggedOut flag so Shell redirects to /login
-  await page.evaluate(() => {
+  // Clear localStorage BEFORE navigation so Shell's redirect logic sees the cleared state
+  await page.addInitScript(() => {
     localStorage.clear();
     localStorage.removeItem("shc.loggedOut");
   });
+  // Navigate to "/" - Shell will redirect to "/login" because shc.loggedOut is cleared and ready becomes true
+  await page.goto(baseURL ?? "/");
   // Wait for Shell to redirect to /login (it redirects when ready && pathname !== "/login" && !loggedOut)
   await page.waitForURL("**/login", { timeout: 30000 });
   // Wait for the login form to be visible
