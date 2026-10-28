@@ -81,7 +81,8 @@ export async function resetAuthState(page: Page, baseURL?: string): Promise<void
     localStorage.removeItem("shc.loggedOut");
   });
   // Navigate directly to /login (not relying on Shell redirect which may not fire in time)
-  await page.goto("/login");
+  // Wait for networkidle to ensure all JS bundles are loaded and React has hydrated
+  await page.goto("/login", { waitUntil: "networkidle" });
   // Wait for the login form to be visible
   await page.waitForSelector('input[id="sharedToken"]', { timeout: 30000 });
 }
