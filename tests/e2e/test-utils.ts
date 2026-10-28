@@ -49,10 +49,7 @@ export const defaultJob: JobData = {
  * backend on bypass hosts.
  */
 export async function login(page: Page, token: string = TEST_TOKEN): Promise<void> {
-  // If not already on the login page, navigate there
-  if (!page.url().endsWith("/login")) {
-    await page.goto("/login");
-  }
+  await page.goto("/login");
   await page.waitForSelector('input[id="sharedToken"]', { timeout: 30000 });
   await page.fill('input[id="sharedToken"]', token);
   await page.click('button:has-text("Connect")');
@@ -75,23 +72,14 @@ export async function login(page: Page, token: string = TEST_TOKEN): Promise<voi
  * against a compose stack on :8000. Nothing about the arrangement was the cause,
  * and nothing about the origin is assumed here: the navigation uses whatever
  * `baseURL` the run is configured with.
- *
- * We navigate to "/" first, which triggers the Shell's redirect to "/login"
- * (since localStorage is cleared via addInitScript before page load).
- * This avoids the auth bypass issues on localhost where direct navigation
- * to /login might not render the form.
  */
-export async function resetAuthState(page, baseURL) {
+export async function resetAuthState(page: Page, baseURL?: string): Promise<void> {
   await page.context().clearCookies();
-  const response = await page.goto((baseURL || '') + '/login');
-  console.log('Response status:', response && response.status());
-  console.log('Page URL after goto:', page.url());
-  await page.waitForTimeout(5000);
-  console.log('Page URL after wait:', page.url());
-  const html = await page.content();
-  console.log('HTML contains sharedToken:', html.includes('sharedToken'));
-  console.log('HTML length:', html.length);
-  await page.waitForSelector('input#sharedToken', { timeout: 30000 });
+  await page.goto(baseURL ?? "/");
+  await page.evaluate(() => {
+    localStorage.clear();
+    localStorage.removeItem("shc.loggedOut");
+  });
 }
 
 export async function gotoSettings(page: Page) {
