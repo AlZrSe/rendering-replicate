@@ -83,7 +83,14 @@ export async function login(page: Page, token: string = TEST_TOKEN): Promise<voi
  */
 export async function resetAuthState(page, baseURL) {
   await page.context().clearCookies();
-  await page.goto((baseURL || '') + '/login');
+  const response = await page.goto((baseURL || '') + '/login');
+  console.log('Response status:', response && response.status());
+  console.log('Page URL after goto:', page.url());
+  await page.waitForTimeout(5000);
+  console.log('Page URL after wait:', page.url());
+  const html = await page.content();
+  console.log('HTML contains sharedToken:', html.includes('sharedToken'));
+  console.log('HTML length:', html.length);
   await page.waitForSelector('input#sharedToken', { timeout: 30000 });
 }
 
