@@ -76,10 +76,15 @@ export async function login(page: Page, token: string = TEST_TOKEN): Promise<voi
 export async function resetAuthState(page: Page, baseURL?: string): Promise<void> {
   await page.context().clearCookies();
   await page.goto(baseURL ?? "/");
+  // Clear localStorage and shc.loggedOut flag so Shell redirects to /login
   await page.evaluate(() => {
     localStorage.clear();
     localStorage.removeItem("shc.loggedOut");
   });
+  // Wait for Shell to redirect to /login (it redirects when ready && pathname !== "/login" && !loggedOut)
+  await page.waitForURL("**/login", { timeout: 30000 });
+  // Wait for the login form to be visible
+  await page.waitForSelector('input[id="sharedToken"]', { timeout: 30000 });
 }
 
 export async function gotoSettings(page: Page) {
