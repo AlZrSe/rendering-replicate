@@ -79,12 +79,33 @@ export async function resetAuthState(page: Page, baseURL?: string): Promise<void
   await page.addInitScript(() => {
     localStorage.clear();
     localStorage.removeItem("shc.loggedOut");
+    // Capture console errors for debugging
+    (window as any).__consoleMessages = [];
+    const origError = console.error;
+    console.error = (...args: any[]) => {
+      (window as any).__consoleMessages.push({ type: "error", args: args.map(String) });
+      origError.apply(console, args);
+    };
+    const origWarn = console.warn;
+    console.warn = (...args: any[]) => {
+      (window as any).__consoleMessages.push({ type: "warn", args: args.map(String) });
+      origWarn.apply(console, args);
+    };
   });
   // Navigate directly to /login (not relying on Shell redirect which may not fire in time)
   // Wait for networkidle to ensure all JS bundles are loaded and React has hydrated
   await page.goto("/login", { waitUntil: "networkidle" });
   // Wait for the login form to be visible
-  await page.waitForSelector('input[id="sharedToken"]', { timeout: 30000 });
+  try {
+    await page.waitForSelector('input[id="sharedToken"]', { timeout: 30000 });
+  } catch (e) {
+    // Debug: capture page content when login form doesn't appear
+    const html = await page.content();
+    console.log("PAGE HTML ON FAILURE:", html.substring(0, 5000));
+    const consoleMessages = await page.evaluate(() => (window as any).__consoleMessages || []);
+    console.log("CONSOLE MESSAGES:", JSON.stringify(consoleMessages));
+    throw e;
+  }
 }
 
 export async function gotoSettings(page: Page) {
