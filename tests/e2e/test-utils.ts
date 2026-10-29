@@ -80,15 +80,16 @@ export async function resetAuthState(page: Page, baseURL?: string): Promise<void
     localStorage.clear();
     localStorage.removeItem("shc.loggedOut");
     // Capture console errors for debugging
-    (window as any).__consoleMessages = [];
+    const w = window as unknown as { __consoleMessages: Array<{ type: string; args: string[] }> };
+    w.__consoleMessages = [];
     const origError = console.error;
-    console.error = (...args: any[]) => {
-      (window as any).__consoleMessages.push({ type: "error", args: args.map(String) });
+    console.error = (...args: (string | number | boolean | null | undefined)[]) => {
+      w.__consoleMessages.push({ type: "error", args: args.map(String) });
       origError.apply(console, args);
     };
     const origWarn = console.warn;
-    console.warn = (...args: any[]) => {
-      (window as any).__consoleMessages.push({ type: "warn", args: args.map(String) });
+    console.warn = (...args: (string | number | boolean | null | undefined)[]) => {
+      w.__consoleMessages.push({ type: "warn", args: args.map(String) });
       origWarn.apply(console, args);
     };
   });
@@ -102,7 +103,12 @@ export async function resetAuthState(page: Page, baseURL?: string): Promise<void
     // Debug: capture page content when login form doesn't appear
     const html = await page.content();
     console.log("PAGE HTML ON FAILURE:", html.substring(0, 5000));
-    const consoleMessages = await page.evaluate(() => (window as any).__consoleMessages || []);
+    const consoleMessages = await page.evaluate(() => {
+      const w = window as unknown as {
+        __consoleMessages?: Array<{ type: string; args: string[] }>;
+      };
+      return w.__consoleMessages || [];
+    });
     console.log("CONSOLE MESSAGES:", JSON.stringify(consoleMessages));
     throw e;
   }
