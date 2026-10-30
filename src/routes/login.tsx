@@ -49,10 +49,9 @@ function LoginPage() {
     setBusy(true);
     try {
       await login(sharedToken);
-      // Clear the loggedOut flag so Shell doesn't redirect away from login
-      // after a successful login on localhost.
+      // Mark as authenticated so Shell doesn't redirect back to login.
       if (typeof window !== "undefined") {
-        window.localStorage.removeItem("shc.loggedOut");
+        window.localStorage.setItem("shc.loggedOut", "false");
       }
       toast.success("Connected to cluster");
       navigate({ to: "/" });

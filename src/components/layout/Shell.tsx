@@ -49,9 +49,9 @@ export function Shell({
     // - The `shc.loggedOut` flag is not set (prevents redirect loop on logout)
     // With cookie-based auth, we don't check for a token in settings.
     // The backend will reject requests with 401 if not authenticated.
-    const loggedOut =
-      typeof window !== "undefined" && window.localStorage.getItem("shc.loggedOut") === "true";
-    if (ready && pathname !== "/login" && !loggedOut) {
+    const authenticated =
+      typeof window !== "undefined" && window.localStorage.getItem("shc.loggedOut") === "false";
+    if (ready && pathname !== "/login" && !authenticated) {
       navigate({ to: "/login" });
     }
   }, [ready, pathname, navigate]);
