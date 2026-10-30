@@ -47,10 +47,4 @@ export default defineConfig({
       },
     },
   },
-
-  // Disable Nitro's own prerender to avoid double-prerendering and 404s
-  // (the Nitro prerender runs before the SPA shell is ready, causing 404s)
-  nitro: {
-    prerender: false,
-  },
 });
