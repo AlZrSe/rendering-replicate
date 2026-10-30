@@ -8,7 +8,7 @@ test.describe("Dashboard", () => {
   });
 
   test("should load dashboard", async ({ page }) => {
-    await page.goto("/");
+    // login() already navigates to "/" and waits for URL, no need for page.goto("/")
     await expect(page).toHaveURL("/");
     try {
       await expect(
@@ -18,7 +18,7 @@ test.describe("Dashboard", () => {
       ).toBeVisible({ timeout: 15000 });
     } catch (e) {
       const html = await page.content();
-      console.log("DASHBOARD PAGE HTML ON FAILURE:", html.substring(0, 5000));
+      console.log("DASHBOARD PAGE HTML ON FAILURE:", html.substring(0, 10000));
       const consoleMessages = await page.evaluate(() => {
         const w = window as unknown as {
           __consoleMessages?: Array<{ type: string; args: string[] }>;
@@ -31,8 +31,6 @@ test.describe("Dashboard", () => {
   });
 
   test("should show navigation", async ({ page }) => {
-    await page.goto("/");
-
     await expect(page.locator('a[href="/"]:has-text("Jobs")')).toBeVisible();
     await expect(page.locator('a[href="/profiles"]:has-text("Profiles")')).toBeVisible();
     await expect(page.locator('a[href="/nodes"]:has-text("Nodes")')).toBeVisible();
@@ -40,8 +38,6 @@ test.describe("Dashboard", () => {
   });
 
   test("should show job statistics", async ({ page }) => {
-    await page.goto("/");
-
     // Use specific selectors for MetricCard labels (p.text-xs.font-medium.tracking-wide.text-muted-foreground.uppercase)
     await expect(
       page.locator(
@@ -66,8 +62,6 @@ test.describe("Dashboard", () => {
   });
 
   test("should show node statistics", async ({ page }) => {
-    await page.goto("/");
-
     await expect(
       page.locator(
         'p.text-xs.font-medium.tracking-wide.text-muted-foreground.uppercase:has-text("Nodes online")',
@@ -76,8 +70,6 @@ test.describe("Dashboard", () => {
   });
 
   test("should show GPU utilization", async ({ page }) => {
-    await page.goto("/");
-
     await expect(
       page.locator(
         'p.text-xs.font-medium.tracking-wide.text-muted-foreground.uppercase:has-text("Nodes online")',
@@ -86,7 +78,6 @@ test.describe("Dashboard", () => {
   });
 
   test("should navigate to jobs page", async ({ page }) => {
-    await page.goto("/");
     await expect(
       page.locator(
         'p.font-mono.text-xs.text-muted-foreground:has-text("cluster workload overview")',
@@ -95,22 +86,18 @@ test.describe("Dashboard", () => {
   });
 
   test("should navigate to nodes page", async ({ page }) => {
-    await page.goto("/");
     await page.click('a[href="/nodes"]:has-text("Nodes")');
     await expect(page).toHaveURL("/nodes");
     await expect(page.locator('h1:has-text("Nodes")')).toBeVisible();
   });
 
   test("should navigate to settings page", async ({ page }) => {
-    await page.goto("/");
     await page.click('a[href="/settings"]:has-text("Settings")');
     await expect(page).toHaveURL("/settings");
     await expect(page.locator('h1:has-text("Settings")')).toBeVisible();
   });
 
   test("should show jobs table on dashboard", async ({ page }) => {
-    await page.goto("/");
-
     await expect(page.getByRole("heading", { name: "Jobs" })).toBeVisible();
     await expect(
       page.locator(
@@ -122,16 +109,12 @@ test.describe("Dashboard", () => {
   });
 
   test("should show theme toggle in header", async ({ page }) => {
-    await page.goto("/");
-
     const themeToggle = page.locator('button:has-text("Light mode"), button:has-text("Dark mode")');
     await expect(themeToggle).toBeVisible();
   });
 
   test("should be responsive", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
-    await page.goto("/");
-
     const menuButton = page.locator('button[aria-label="Menu"], button[aria-label="Open menu"]');
     if (await menuButton.isVisible()) {
       await menuButton.click();
