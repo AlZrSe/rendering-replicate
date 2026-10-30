@@ -46,12 +46,12 @@ export function Shell({
     // Redirect to login if:
     // - App is ready
     // - User is not on the login page already
-    // - The `shc.loggedOut` flag is not set (prevents redirect loop on logout)
-    // With cookie-based auth, we don't check for a token in settings.
-    // The backend will reject requests with 401 if not authenticated.
-    const authenticated =
-      typeof window !== "undefined" && window.localStorage.getItem("shc.loggedOut") === "false";
-    if (ready && pathname !== "/login" && !authenticated) {
+    // - User has NOT explicitly logged out (shc.loggedOut !== "true")
+    // The cookie-based auth handles session validation; API calls will fail with 401
+    // if the session is invalid, which the components handle appropriately.
+    const loggedOut =
+      typeof window !== "undefined" && window.localStorage.getItem("shc.loggedOut") === "true";
+    if (ready && pathname !== "/login" && !loggedOut) {
       navigate({ to: "/login" });
     }
   }, [ready, pathname, navigate]);

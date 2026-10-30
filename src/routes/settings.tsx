@@ -52,8 +52,9 @@ function SettingsPage() {
       await logout();
     } finally {
       if (typeof window !== "undefined") {
-        window.location.href = "/login";
+        window.localStorage.setItem("shc.loggedOut", "true");
       }
+      navigate({ to: "/login" });
     }
   };
 
