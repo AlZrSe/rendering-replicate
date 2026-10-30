@@ -10,11 +10,24 @@ test.describe("Dashboard", () => {
   test("should load dashboard", async ({ page }) => {
     await page.goto("/");
     await expect(page).toHaveURL("/");
-    await expect(
-      page.locator(
-        'p.font-mono.text-xs.text-muted-foreground:has-text("cluster workload overview")',
-      ),
-    ).toBeVisible();
+    try {
+      await expect(
+        page.locator(
+          'p.font-mono.text-xs.text-muted-foreground:has-text("cluster workload overview")',
+        ),
+      ).toBeVisible({ timeout: 15000 });
+    } catch (e) {
+      const html = await page.content();
+      console.log("DASHBOARD PAGE HTML ON FAILURE:", html.substring(0, 5000));
+      const consoleMessages = await page.evaluate(() => {
+        const w = window as unknown as {
+          __consoleMessages?: Array<{ type: string; args: string[] }>;
+        };
+        return w.__consoleMessages || [];
+      });
+      console.log("DASHBOARD CONSOLE MESSAGES:", JSON.stringify(consoleMessages));
+      throw e;
+    }
   });
 
   test("should show navigation", async ({ page }) => {
