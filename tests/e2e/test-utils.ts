@@ -82,13 +82,16 @@ export async function resetAuthState(page: Page, baseURL?: string): Promise<void
   await page.context().clearCookies();
 
   // Clear localStorage ONCE on the initial about:blank page, before any navigation.
-  // This script runs only once when the context is created, not on every navigation.
+  // The init script runs on every navigation, so we only clear if we're on about:blank.
   await page.addInitScript(() => {
-    try {
-      localStorage.clear();
-      localStorage.removeItem("shc.loggedOut");
-    } catch {
-      // Ignore SecurityError on about:blank
+    // Only clear on the initial about:blank page, not on subsequent navigations
+    if (window.location.href === "about:blank") {
+      try {
+        localStorage.clear();
+        localStorage.removeItem("shc.loggedOut");
+      } catch {
+        // Ignore SecurityError on about:blank
+      }
     }
     // Capture console errors for debugging
     const w = window as unknown as { __consoleMessages: Array<{ type: string; args: string[] }> };
