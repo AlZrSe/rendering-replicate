@@ -72,13 +72,24 @@ export async function login(page: Page, token: string = TEST_TOKEN): Promise<voi
  * against a compose stack on :8000. Nothing about the arrangement was the cause,
  * and nothing about the origin is assumed here: the navigation uses whatever
  * `baseURL` the run is configured with.
+ *
+ * The fix: clear localStorage ONCE via an init script that runs on the initial
+ * about:blank page, then navigate to /login. Subsequent navigations must NOT
+ * clear localStorage again, or the Shell's redirect logic will see a cleared
+ * state and bounce the user back to /login (issue #150).
  */
 export async function resetAuthState(page: Page, baseURL?: string): Promise<void> {
   await page.context().clearCookies();
-  // Clear localStorage BEFORE navigation so Shell's redirect logic sees the cleared state
+
+  // Clear localStorage ONCE on the initial about:blank page, before any navigation.
+  // This script runs only once when the context is created, not on every navigation.
   await page.addInitScript(() => {
-    localStorage.clear();
-    localStorage.removeItem("shc.loggedOut");
+    try {
+      localStorage.clear();
+      localStorage.removeItem("shc.loggedOut");
+    } catch {
+      // Ignore SecurityError on about:blank
+    }
     // Capture console errors for debugging
     const w = window as unknown as { __consoleMessages: Array<{ type: string; args: string[] }> };
     w.__consoleMessages = [];
@@ -93,9 +104,11 @@ export async function resetAuthState(page: Page, baseURL?: string): Promise<void
       origWarn.apply(console, args);
     };
   });
+
   // Navigate directly to /login (not relying on Shell redirect which may not fire in time)
   // Wait for networkidle to ensure all JS bundles are loaded and React has hydrated
   await page.goto("/login", { waitUntil: "networkidle" });
+
   // Wait for the login form to be visible
   try {
     await page.waitForSelector('input[id="sharedToken"]', { timeout: 30000 });
