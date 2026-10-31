@@ -49,9 +49,9 @@ export function Shell({
     // - User has NOT explicitly logged out (shc.loggedOut !== "true")
     // The cookie-based auth handles session validation; API calls will fail with 401
     // if the session is invalid, which the components handle appropriately.
-    const loggedOut =
-      typeof window !== "undefined" && window.localStorage.getItem("shc.loggedOut") === "true";
-    if (ready && pathname !== "/login" && !loggedOut) {
+    const authenticated =
+      typeof window !== "undefined" && window.localStorage.getItem("shc.loggedOut") === "false";
+    if (ready && pathname !== "/login" && !authenticated) {
       navigate({ to: "/login" });
     }
   }, [ready, pathname, navigate]);
