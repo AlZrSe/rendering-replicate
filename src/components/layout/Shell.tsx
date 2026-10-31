@@ -50,7 +50,7 @@ export function Shell({
     // The cookie-based auth handles session validation; API calls will fail with 401
     // if the session is invalid, which the components handle appropriately.
     const authenticated =
-      typeof window !== "undefined" && window.localStorage.getItem("shc.loggedOut") === "false";
+      typeof window !== "undefined" && window.localStorage.getItem("shc.authenticated") === "true";
     if (ready && pathname !== "/login" && !authenticated) {
       navigate({ to: "/login" });
     }
@@ -136,7 +136,7 @@ export function Shell({
             onClick={async () => {
               await logout();
               if (typeof window !== "undefined") {
-                window.localStorage.setItem("shc.loggedOut", "true");
+                window.localStorage.removeItem("shc.authenticated");
               }
               navigate({ to: "/login" });
             }}

@@ -88,7 +88,7 @@ export async function resetAuthState(page: Page, baseURL?: string): Promise<void
     if (window.location.href === "about:blank") {
       try {
         localStorage.clear();
-        localStorage.removeItem("shc.loggedOut");
+        localStorage.removeItem("shc.authenticated");
       } catch {
         // Ignore SecurityError on about:blank
       }

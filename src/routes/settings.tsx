@@ -52,7 +52,7 @@ function SettingsPage() {
       await logout();
     } finally {
       if (typeof window !== "undefined") {
-        window.localStorage.setItem("shc.loggedOut", "true");
+        window.localStorage.removeItem("shc.authenticated");
       }
       navigate({ to: "/login" });
     }

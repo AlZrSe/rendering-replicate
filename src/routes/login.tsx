@@ -36,12 +36,6 @@ function LoginPage() {
   useEffect(() => {
     const s = getSettings();
     setApiUrl(s.apiBaseUrl);
-    // On bypass hosts, the login form should render so the user can
-    // explicitly choose to use the bypass token.
-    if (typeof window !== "undefined" && window.localStorage.getItem("shc.loggedOut") === "true") {
-      // If explicitly logged out, show login form even on localhost
-      return;
-    }
   }, [navigate]);
 
   const submit = async (e: React.FormEvent) => {
@@ -51,7 +45,7 @@ function LoginPage() {
       await login(sharedToken);
       // Mark as authenticated so Shell doesn't redirect back to login.
       if (typeof window !== "undefined") {
-        window.localStorage.removeItem("shc.loggedOut");
+        window.localStorage.setItem("shc.authenticated", "true");
       }
       toast.success("Connected to cluster");
       navigate({ to: "/" });
