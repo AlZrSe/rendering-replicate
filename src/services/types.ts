@@ -6,6 +6,7 @@ import type {
   JobStatus,
   NodeSpec,
 } from "@/lib/types";
+import type { SoftwareProfile } from "@/lib/profiles";
 
 // `src/services/index.ts` imports these five by name from here, so they have to be
 // re-exported. While they were imported but not re-exported, every one of them
@@ -94,6 +95,14 @@ export interface ClusterService {
   getNodeMetrics(id: string): Promise<JobMetrics>;
 
   getSyncthingStatus(): Promise<SyncthingStatus>;
+
+  listProfiles(): Promise<SoftwareProfile[]>;
+  getProfile(id: string): Promise<SoftwareProfile>;
+  createProfile(profile: SoftwareProfile): Promise<SoftwareProfile>;
+  updateProfile(id: string, profile: SoftwareProfile): Promise<SoftwareProfile>;
+  deleteProfile(id: string): Promise<void>;
+  resetProfile(id: string): Promise<SoftwareProfile>;
+  restoreBuiltins(): Promise<void>;
 
   validateToken(token: string): Promise<boolean>;
 

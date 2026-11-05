@@ -4,6 +4,7 @@
  * "mock" — see ./index.ts, which owns that decision.
  */
 import type { JobListResult, JobMetrics, JobSpec, JobState, NodeSpec } from "@/lib/types";
+import type { SoftwareProfile } from "@/lib/profiles";
 import { getSettings } from "@/lib/settings";
 import type {
   ClusterService,
@@ -144,6 +145,16 @@ export const httpService: ClusterService = {
   getNodeMetrics: (id) => request<JobMetrics>(`/nodes/${id}/metrics`),
 
   getSyncthingStatus: () => request<SyncthingStatus>("/syncthing/status"),
+
+  listProfiles: () => request<SoftwareProfile[]>("/profiles"),
+  getProfile: (id) => request<SoftwareProfile>(`/profiles/${id}`),
+  createProfile: (profile) =>
+    request<SoftwareProfile>("/profiles", { method: "POST", body: JSON.stringify(profile) }),
+  updateProfile: (id, profile) =>
+    request<SoftwareProfile>(`/profiles/${id}`, { method: "PUT", body: JSON.stringify(profile) }),
+  deleteProfile: (id) => request<void>(`/profiles/${id}`, { method: "DELETE" }),
+  resetProfile: (id) => request<SoftwareProfile>(`/profiles/${id}/reset`, { method: "POST" }),
+  restoreBuiltins: () => request<void>("/profiles/restore-builtins", { method: "POST" }),
 
   /**
    * Returns a verdict on the token only. An unreachable backend is *not* a
