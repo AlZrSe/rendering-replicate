@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { listNodes } from "@/services";
 import { fmtAgo } from "@/lib/format";
 import { useSettings } from "@/lib/settings";
-import { useErrorHandler, createQueryErrorHandler } from "@/hooks/useErrorHandler";
+import { useErrorHandler } from "@/hooks/useErrorHandler";
 
 export const Route = createFileRoute("/nodes/")({
   head: () => ({

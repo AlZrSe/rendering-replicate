@@ -176,25 +176,7 @@ export function createMutationErrorHandler(
   return (error: unknown) => handleError(error);
 }
 
-/**
- * Helper to create an onError handler for React Query queries.
- * Deduplicates toasts for the same error within a time window.
- */
-export function createQueryErrorHandler(handleError: (error: unknown, context?: string) => void) {
-  let lastErrorTime = 0;
-  let lastErrorMessage = "";
-
-  return (error: unknown) => {
-    const now = Date.now();
-    const errorMessage = error instanceof Error ? error.message : String(error);
-
-    // Deduplicate: don't show toast if same error within 5 seconds
-    if (now - lastErrorTime < 5000 && errorMessage === lastErrorMessage) {
-      return;
-    }
-
-    lastErrorTime = now;
-    lastErrorMessage = errorMessage;
-    handleError(error);
-  };
-}
+// Note (issue #49): createQueryErrorHandler was removed. It had zero call sites
+// and its 5s de-dupe window was shorter than the 7s default poll interval, so
+// it could never act as a net. Error handling is per-route via useErrorHandler;
+// no global QueryClient onError is configured (see router.tsx).
