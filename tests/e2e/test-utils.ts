@@ -134,14 +134,15 @@ export async function resetAuthState(page: Page, baseURL?: string): Promise<void
   await page.goto("/login", { waitUntil: "networkidle" });
 
   // On localhost (and other bypass hosts), the login page redirects to "/" immediately.
-  // Check if we were redirected - if so, we're on a bypass host and already "logged in".
-  const currentUrl = page.url();
-  if (!currentUrl.includes("/login")) {
-    // Redirected away from /login - bypass host, we're done
+  // Wait for potential client-side redirect to complete (longer timeout for CI).
+  await page.waitForURL((url) => !url.includes("/login"), { timeout: 15000 }).catch(() => {});
+
+  // If we were redirected away from /login, we're on a bypass host - auth state is cleared, done.
+  if (!page.url().includes("/login")) {
     return;
   }
 
-  // Wait for the login form to be visible (non-bypass hosts)
+  // Non-bypass hosts: wait for the login form to be visible
   try {
     await page.waitForSelector('input[id="sharedToken"]', { timeout: 30000 });
   } catch (e) {
