@@ -50,6 +50,15 @@ export const defaultJob: JobData = {
  */
 export async function login(page: Page, token: string = TEST_TOKEN): Promise<void> {
   await page.goto("/login");
+
+  // On localhost (and other bypass hosts), the login page redirects to "/" immediately.
+  const currentUrl = page.url();
+  if (!currentUrl.includes("/login")) {
+    // Redirected away from /login - bypass host, we're done
+    return;
+  }
+
+  // Non-bypass hosts: fill in the login form
   await page.waitForSelector('input[id="sharedToken"]', { timeout: 30000 });
   await page.fill('input[id="sharedToken"]', token);
   await page.click('button:has-text("Connect")');
@@ -112,7 +121,15 @@ export async function resetAuthState(page: Page, baseURL?: string): Promise<void
   // Wait for networkidle to ensure all JS bundles are loaded and React has hydrated
   await page.goto("/login", { waitUntil: "networkidle" });
 
-  // Wait for the login form to be visible
+  // On localhost (and other bypass hosts), the login page redirects to "/" immediately.
+  // Check if we were redirected - if so, we're on a bypass host and already "logged in".
+  const currentUrl = page.url();
+  if (!currentUrl.includes("/login")) {
+    // Redirected away from /login - bypass host, we're done
+    return;
+  }
+
+  // Wait for the login form to be visible (non-bypass hosts)
   try {
     await page.waitForSelector('input[id="sharedToken"]', { timeout: 30000 });
   } catch (e) {
