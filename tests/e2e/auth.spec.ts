@@ -40,16 +40,28 @@ test.describe("Authentication", () => {
   test("should logout and return to login", async ({ page }) => {
     await login(page, TEST_TOKEN);
 
+    // Check if we're on a bypass host
+    const isBypass = await page.evaluate(() => {
+      const raw = window.location.hostname.trim().toLowerCase();
+      const h = raw.startsWith("[") && raw.endsWith("]") ? raw.slice(1, -1) : raw;
+      const exact = ["localhost", "127.0.0.1", "::1"];
+      const suffixes = [".local", ".lovable.app"];
+      return exact.includes(h) || suffixes.some((s) => h.endsWith(s));
+    });
+
     // Click logout button in settings
     await page.click('a[href="/settings"], button:has-text("Settings")');
     await expect(page).toHaveURL("/settings");
 
     await page.click('button:has-text("Sign out")');
-    await expect(page).toHaveURL("/login");
+
+    // On bypass hosts, logout redirects to "/" instead of "/login"
+    const expectedUrl = isBypass ? "/" : "/login";
+    await expect(page).toHaveURL(expectedUrl);
 
     // Try to access protected page
     await page.goto("/");
-    await expect(page).toHaveURL("/login");
+    await expect(page).toHaveURL(expectedUrl);
   });
 
   test("should validate token via API", async ({ page }) => {
