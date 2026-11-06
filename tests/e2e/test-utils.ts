@@ -49,12 +49,14 @@ export const defaultJob: JobData = {
  * backend on bypass hosts.
  */
 export async function login(page: Page, token: string = TEST_TOKEN): Promise<void> {
-  await page.goto("/login");
+  await page.goto("/login", { waitUntil: "networkidle" });
 
   // On localhost (and other bypass hosts), the login page redirects to "/" immediately.
-  const currentUrl = page.url();
-  if (!currentUrl.includes("/login")) {
-    // Redirected away from /login - bypass host, we're done
+  // Wait for potential client-side redirect to complete.
+  await page.waitForURL((url) => !url.includes("/login"), { timeout: 5000 }).catch(() => {});
+
+  // If we're not on /login, we were redirected (bypass host) - we're done.
+  if (!page.url().includes("/login")) {
     return;
   }
 
