@@ -37,7 +37,7 @@ function LoginPage() {
   // On localhost, skip login entirely — redirect to dashboard.
   useEffect(() => {
     if (isLocalhost()) {
-      navigate({ to: "/" }, { replace: true });
+      navigate({ to: "/", replace: true });
     }
   }, [navigate]);
 
