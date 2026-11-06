@@ -52,7 +52,6 @@ export async function login(page: Page, token: string = TEST_TOKEN): Promise<voi
   // If already authenticated and not on /login, we're done
   const currentUrl = page.url();
   if (!currentUrl.includes("/login")) {
-    // Check if we have auth flag - if so, we're already logged in
     const hasAuth = await page.evaluate(() => localStorage.getItem("shc.authenticated") === "true");
     if (hasAuth) {
       return;
@@ -62,8 +61,9 @@ export async function login(page: Page, token: string = TEST_TOKEN): Promise<voi
   await page.goto("/login", { waitUntil: "networkidle" });
 
   // On localhost (and other bypass hosts), the login page redirects to "/" immediately.
-  // Wait for potential client-side redirect to complete (longer timeout for CI).
-  await page.waitForURL((url) => !url.includes("/login"), { timeout: 15000 }).catch(() => {});
+  // Wait for potential client-side redirect to complete.
+  await page.waitForLoadState("networkidle");
+  await page.waitForTimeout(2000); // Allow time for client-side redirect
 
   // If we're not on /login, we were redirected (bypass host) - we're done.
   if (!page.url().includes("/login")) {
@@ -134,8 +134,9 @@ export async function resetAuthState(page: Page, baseURL?: string): Promise<void
   await page.goto("/login", { waitUntil: "networkidle" });
 
   // On localhost (and other bypass hosts), the login page redirects to "/" immediately.
-  // Wait for potential client-side redirect to complete (longer timeout for CI).
-  await page.waitForURL((url) => !url.includes("/login"), { timeout: 15000 }).catch(() => {});
+  // Wait for potential client-side redirect to complete.
+  await page.waitForLoadState("networkidle");
+  await page.waitForTimeout(2000); // Allow time for client-side redirect
 
   // If we were redirected away from /login, we're on a bypass host - auth state is cleared, done.
   if (!page.url().includes("/login")) {
