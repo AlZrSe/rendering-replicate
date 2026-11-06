@@ -19,8 +19,17 @@ const KEY = "shc.settings";
  */
 const envApiBaseUrl = (import.meta.env["VITE_API_URL"] as string | undefined)?.trim();
 
+// On a local/LAN machine the backend is usually reachable on the same host
+// as the frontend, just on port 8000. Derive the default from the page host so
+// the dashboard works when opened via 127.0.0.1 or a LAN IP instead of
+// hard-coding "localhost" (which would point at the viewer's own machine).
+const localApiBaseUrl =
+  typeof window !== "undefined" && window.location && window.location.hostname
+    ? `http://${window.location.hostname}:8000/api/v1`
+    : "http://localhost:8000/api/v1";
+
 export const defaultSettings: Settings = {
-  apiBaseUrl: envApiBaseUrl || "http://localhost:8000/api/v1",
+  apiBaseUrl: envApiBaseUrl || localApiBaseUrl,
   theme: "dark",
   wsReconnectMs: 3000,
   pollIntervalMs: 7000,

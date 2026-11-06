@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { login, ServiceError } from "@/services";
 import { getSettings, setSettings, defaultSettings } from "@/lib/settings";
+import { isLocalhost } from "@/lib/settings";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -29,19 +30,29 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
   const navigate = useNavigate();
   const [sharedToken, setSharedToken] = useState("");
-  const [apiUrl, setApiUrl] = useState(defaultSettings.apiBaseUrl);
+  const [apiUrl, setApiUrl] = useState(defaultSettings.apiBaseUrl || "http://localhost:8000/api/v1");
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  // On localhost, skip login entirely — redirect to dashboard.
+  useEffect(() => {
+    if (isLocalhost()) {
+      navigate({ to: "/" }, { replace: true });
+    }
+  }, [navigate]);
+
   useEffect(() => {
     const s = getSettings();
-    setApiUrl(s.apiBaseUrl);
+    setApiUrl(s.apiBaseUrl || "http://localhost:8000/api/v1");
   }, [navigate]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
     try {
+      // Apply the API base URL entered on the form before talking to the
+      // backend, so a non-default host (e.g. a LAN IP) is actually used.
+      setSettings({ apiBaseUrl: apiUrl.trim() || defaultSettings.apiBaseUrl });
       await login(sharedToken);
       // Mark as authenticated so Shell doesn't redirect back to login.
       if (typeof window !== "undefined") {
@@ -128,7 +139,7 @@ function LoginPage() {
               type="url"
               value={apiUrl}
               onChange={(e) => setApiUrl(e.target.value)}
-              placeholder="https://your-backend.example.com/api/v1"
+              placeholder="http://localhost:8000/api/v1"
               disabled={busy}
             />
           </div>

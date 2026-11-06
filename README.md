@@ -13,10 +13,10 @@ Form + Zod, Sonner, date-fns, Lucide icons.
 
 ```bash
 npm install
-npm run dev     # http://localhost:5173
+npm run dev     # http://localhost:8080
 ```
 
-The dev server listens on **5173**, which is what `playwright.config.ts` targets and what the
+The dev server listens on **8080**, which is what `playwright.config.ts` targets and what the
 backend's CORS allow-list accepts (`backend/core/config.py`). The port comes from the shared
 `@lovable.dev/vite-tanstack-config` package, not from this repository.
 

@@ -82,7 +82,7 @@ function JobsPage() {
   });
   const allJobs = useQuery({
     queryKey: ["jobs", "all"],
-    queryFn: () => listJobs({ limit: 999 }),
+    queryFn: () => listJobs({ limit: 100 }),
     refetchInterval: settings.pollIntervalMs,
   });
 

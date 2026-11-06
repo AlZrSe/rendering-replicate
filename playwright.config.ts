@@ -29,7 +29,7 @@ export default defineConfig({
   workers: 1,
   reporter: "html",
   use: {
-    baseURL: externalBaseURL ?? "http://localhost:5173",
+    baseURL: externalBaseURL ?? "http://localhost:8080",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
@@ -61,7 +61,7 @@ export default defineConfig({
           },
           {
             command: "npm run dev",
-            url: "http://localhost:5173",
+            url: "http://localhost:8080",
             reuseExistingServer: true,
             timeout: 120000,
             cwd: path.resolve(__dirname),
