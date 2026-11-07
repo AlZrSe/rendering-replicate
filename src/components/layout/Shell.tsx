@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import {
   BookMarked,
   Cpu,
@@ -7,6 +8,7 @@ import {
   LogOut,
   Menu,
   Moon,
+  Network,
   Server,
   Settings2,
   Sun,
@@ -16,7 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useSettings } from "@/lib/settings";
 import { isLocalhost } from "@/lib/settings";
-import { logout } from "@/services";
+import { getSyncthingStatus, logout } from "@/services";
 import { cn } from "@/lib/utils";
 
 const nav = [
@@ -40,6 +42,13 @@ export function Shell({
   const { settings, update, ready } = useSettings();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { data: syncthingStatus } = useQuery({
+    queryKey: ["syncthing", "status"],
+    queryFn: getSyncthingStatus,
+    retry: 1,
+  });
+  const syncthingEmbedded = syncthingStatus?.gui?.reachable === false;
+  const syncthingUrl = syncthingStatus?.gui?.url;
   const [open, setOpen] = useState(false);
   const [offline, setOffline] = useState(false);
 
@@ -118,6 +127,46 @@ export function Shell({
               </Link>
             );
           })}
+          {syncthingEmbedded ? (
+            <Link
+              to="/syncthing"
+              onClick={() => setOpen(false)}
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                pathname.startsWith("/syncthing")
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
+              )}
+            >
+              <Network className="size-4" /> Syncthing
+            </Link>
+          ) : syncthingUrl ? (
+            <a
+              href={syncthingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setOpen(false)}
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
+              )}
+            >
+              <Network className="size-4" /> Syncthing
+            </a>
+          ) : (
+            <Link
+              to="/syncthing"
+              onClick={() => setOpen(false)}
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                pathname.startsWith("/syncthing")
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
+              )}
+            >
+              <Network className="size-4" /> Syncthing
+            </Link>
+          )}
         </nav>
         <div className="border-t border-sidebar-border p-3">
           <p className="px-2 pb-2 font-mono text-[11px] break-all text-muted-foreground">
