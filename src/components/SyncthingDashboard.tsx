@@ -77,6 +77,9 @@ export function SyncthingDashboard() {
 
   const guiUrl = data.gui?.url;
   const guiReachable = data.gui?.reachable ?? false;
+  const backendOrigin = settings.apiBaseUrl.replace(/\/api\/v1\/?$/, "");
+  const proxyUrl = `${backendOrigin}/api/v1/syncthing/gui/`;
+  const effectiveGuiUrl = guiReachable ? guiUrl : proxyUrl;
 
   return (
     <Card className="h-full">
@@ -107,11 +110,11 @@ export function SyncthingDashboard() {
           </CardDescription>
         </div>
         <div className="flex gap-2">
-          {guiUrl && (
+          {effectiveGuiUrl && (
             <Button
               variant="outline"
               size="sm"
-              onClick={() => openInNewTab(guiUrl)}
+              onClick={() => openInNewTab(effectiveGuiUrl)}
               disabled={!guiReachable}
             >
               <ExternalLink className="size-4 mr-2" />
@@ -122,10 +125,10 @@ export function SyncthingDashboard() {
       </CardHeader>
       <CardContent className="p-0">
         <div className="relative aspect-video w-full">
-          {guiUrl && (
+          {effectiveGuiUrl && (
             <iframe
               ref={iframeRef}
-              src={guiUrl}
+              src={effectiveGuiUrl}
               title="Syncthing Dashboard"
               className="absolute inset-0 w-full h-full rounded-lg border-0"
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
@@ -134,12 +137,12 @@ export function SyncthingDashboard() {
               style={{ display: iframeLoaded || iframeError ? "block" : "none" }}
             />
           )}
-          {!guiUrl && (
+          {!effectiveGuiUrl && (
             <div className="flex items-center justify-center h-full text-muted-foreground">
               <p>Syncthing GUI URL not available</p>
             </div>
           )}
-          {(iframeError || (!iframeLoaded && guiUrl)) && (
+          {(iframeError || (!iframeLoaded && effectiveGuiUrl)) && (
             <div className="absolute inset-0 flex items-center justify-center bg-muted/50 rounded-lg p-4">
               <div className="text-center space-y-3">
                 <AlertCircle className="mx-auto size-12 text-destructive" />
@@ -151,8 +154,8 @@ export function SyncthingDashboard() {
                     ? "The Syncthing GUI could not be loaded in this iframe. This may be due to browser security policies or the Syncthing instance not being reachable."
                     : "The Syncthing dashboard is loading..."}
                 </p>
-                {guiUrl && (
-                  <Button variant="default" size="sm" onClick={() => openInNewTab(guiUrl)}>
+                {effectiveGuiUrl && (
+                  <Button variant="default" size="sm" onClick={() => openInNewTab(effectiveGuiUrl)}>
                     <ExternalLink className="size-4 mr-2" />
                     Open in New Tab
                   </Button>
