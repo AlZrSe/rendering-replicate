@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "lockfile:check": "npm ci --dry-run 2>&1"
+    "lockfile:check": "npm ci --dry-run 2>&1",
+    "typecheck": "tsc --noEmit"
   },
   "overrides": {
     "rolldown": "1.2.1"
