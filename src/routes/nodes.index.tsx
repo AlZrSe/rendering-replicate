@@ -50,6 +50,12 @@ function NodesPage() {
     refetchInterval: settings.pollIntervalMs,
   });
 
+  // Refresh state and shared refresh function (mirrors Jobs dashboard pattern)
+  const refreshing = nodesQuery.isFetching;
+  const refreshAll = () => {
+    void nodesQuery.refetch();
+  };
+
   // Handle query errors
   if (nodesQuery.isError) {
     handleError(nodesQuery.error);
@@ -62,16 +68,22 @@ function NodesPage() {
       title="Nodes"
       subtitle="GET /nodes"
       actions={
-        <Select value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
-          <SelectTrigger className="w-36" aria-label="Filter nodes by status">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">All nodes</SelectItem>
-            <SelectItem value="ONLINE">Online</SelectItem>
-            <SelectItem value="OFFLINE">Offline</SelectItem>
-          </SelectContent>
-        </Select>
+        <>
+          <Select value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
+            <SelectTrigger className="w-36" aria-label="Filter nodes by status">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All nodes</SelectItem>
+              <SelectItem value="ONLINE">Online</SelectItem>
+              <SelectItem value="OFFLINE">Offline</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="sm" onClick={refreshAll}>
+            <RefreshCw className={refreshing ? "size-4 animate-spin" : "size-4"} />
+            Refresh
+          </Button>
+        </>
       }
     >
       {nodesQuery.isPending ? (
@@ -85,8 +97,8 @@ function NodesPage() {
           <AlertCircle className="size-12 text-destructive mx-auto" />
           <h3 className="text-lg font-semibold">Nodes could not be loaded</h3>
           <p className="text-sm text-muted-foreground">Failed to fetch nodes. Please try again.</p>
-          <Button variant="outline" onClick={() => nodesQuery.refetch()}>
-            <RefreshCw className="size-4" /> Retry
+          <Button variant="outline" onClick={refreshAll}>
+            <RefreshCw className={refreshing ? "size-4 animate-spin" : "size-4"} /> Retry
           </Button>
         </div>
       ) : nodes.length === 0 ? (
