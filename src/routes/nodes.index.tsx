@@ -57,21 +57,35 @@ function NodesPage() {
 
   const nodes = (nodesQuery.data ?? []).filter((n) => filter === "ALL" || n.status === filter);
 
+  // Track if any query on the page is fetching (for Refresh button spinner)
+  const refreshing = nodesQuery.isFetching;
+
+  // Shared refresh function (mirrors Jobs dashboard pattern)
+  const refreshAll = () => {
+    void nodesQuery.refetch();
+  };
+
   return (
     <Shell
       title="Nodes"
       subtitle="GET /nodes"
       actions={
-        <Select value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
-          <SelectTrigger className="w-36" aria-label="Filter nodes by status">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">All nodes</SelectItem>
-            <SelectItem value="ONLINE">Online</SelectItem>
-            <SelectItem value="OFFLINE">Offline</SelectItem>
-          </SelectContent>
-        </Select>
+        <>
+          <Select value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
+            <SelectTrigger className="w-36" aria-label="Filter nodes by status">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All nodes</SelectItem>
+              <SelectItem value="ONLINE">Online</SelectItem>
+              <SelectItem value="OFFLINE">Offline</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="sm" onClick={refreshAll}>
+            <RefreshCw className={refreshing ? "size-4 animate-spin" : "size-4"} />
+            Refresh
+          </Button>
+        </>
       }
     >
       {nodesQuery.isPending ? (
@@ -85,8 +99,8 @@ function NodesPage() {
           <AlertCircle className="size-12 text-destructive mx-auto" />
           <h3 className="text-lg font-semibold">Nodes could not be loaded</h3>
           <p className="text-sm text-muted-foreground">Failed to fetch nodes. Please try again.</p>
-          <Button variant="outline" onClick={() => nodesQuery.refetch()}>
-            <RefreshCw className="size-4" /> Retry
+          <Button variant="outline" onClick={refreshAll}>
+            <RefreshCw className={refreshing ? "size-4 animate-spin" : "size-4"} /> Retry
           </Button>
         </div>
       ) : nodes.length === 0 ? (
@@ -94,7 +108,7 @@ function NodesPage() {
           <EmptyState
             icon={<Server className="size-6" />}
             title="No nodes to show"
-            description="Nodes appear here after they register with POST /nodes/register."
+            description="Nodes appear here after they register by writing nodes/node-<id>.yaml to the Syncthing folder."
           />
         </div>
       ) : (
