@@ -50,6 +50,12 @@ function NodesPage() {
     refetchInterval: settings.pollIntervalMs,
   });
 
+  // Refresh state and shared refresh function (mirrors Jobs dashboard pattern)
+  const refreshing = nodesQuery.isFetching;
+  const refreshAll = () => {
+    void nodesQuery.refetch();
+  };
+
   // Handle query errors
   if (nodesQuery.isError) {
     handleError(nodesQuery.error);
