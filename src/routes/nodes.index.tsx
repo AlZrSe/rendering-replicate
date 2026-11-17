@@ -50,8 +50,10 @@ function NodesPage() {
     refetchInterval: settings.pollIntervalMs,
   });
 
-  // Refresh state and shared refresh function (mirrors Jobs dashboard pattern)
+  // Track if any query on the page is fetching (for Refresh button spinner)
   const refreshing = nodesQuery.isFetching;
+
+  // Shared refresh function (mirrors Jobs dashboard pattern)
   const refreshAll = () => {
     void nodesQuery.refetch();
   };
@@ -62,14 +64,6 @@ function NodesPage() {
   }
 
   const nodes = (nodesQuery.data ?? []).filter((n) => filter === "ALL" || n.status === filter);
-
-  // Track if any query on the page is fetching (for Refresh button spinner)
-  const refreshing = nodesQuery.isFetching;
-
-  // Shared refresh function (mirrors Jobs dashboard pattern)
-  const refreshAll = () => {
-    void nodesQuery.refetch();
-  };
 
   return (
     <Shell
