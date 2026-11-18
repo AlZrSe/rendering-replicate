@@ -5,6 +5,7 @@
 import { jobs, logsFor, metricsFor, nodes, subscribeLogs } from "@/lib/mock-server";
 import type { JobListResult, JobMetrics, JobSpec, JobState, NodeSpec } from "@/lib/types";
 import type { SoftwareProfile } from "@/lib/profiles";
+import { builtinProfiles } from "@/lib/profiles";
 import { getSettings } from "@/lib/settings";
 import type {
   ClusterService,
@@ -229,11 +230,15 @@ export const mockService: ClusterService = {
 
   async listProfiles(): Promise<SoftwareProfile[]> {
     await delay();
-    return [];
+    return builtinProfiles;
   },
   async getProfile(id: string): Promise<SoftwareProfile> {
     await delay();
-    throw new ServiceError(404, "not found");
+    const profile = builtinProfiles.find((p) => p.id === id);
+    if (!profile) {
+      throw new ServiceError(404, "not found");
+    }
+    return profile;
   },
   async createProfile(profile: SoftwareProfile): Promise<SoftwareProfile> {
     await delay();

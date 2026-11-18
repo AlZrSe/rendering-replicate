@@ -178,6 +178,78 @@ export const builtinProfiles: SoftwareProfile[] = [
     env: [{ key: "PYTHONUNBUFFERED", value: "1" }],
     builtin: true,
   },
+  {
+    id: "sample-calc-smoke",
+    name: "Sample Calculation — Smoke Test",
+    software: "sample_calc",
+    description: "Quick smoke test (< 5 s) using the sample calculation program",
+    command: "python bin/sample_calc.py --preset smoke --seed 42",
+    working_dir: ".",
+    gpus: 0,
+    cpus: 1,
+    memory_gb: 2,
+    vram_gb: 0,
+    input: "",
+    output: "",
+    max_retries: 0,
+    retry_delay_seconds: 0,
+    env: [],
+    builtin: true,
+  },
+  {
+    id: "sample-calc-cpu",
+    name: "Sample Calculation — CPU",
+    software: "sample_calc",
+    description: "~60 s CPU run using torch or numpy backend",
+    command: "python bin/sample_calc.py --preset cpu-1min --seed 42 --progress-every 100",
+    working_dir: ".",
+    gpus: 0,
+    cpus: 4,
+    memory_gb: 8,
+    vram_gb: 0,
+    input: "",
+    output: "",
+    max_retries: 0,
+    retry_delay_seconds: 0,
+    env: [],
+    builtin: true,
+  },
+  {
+    id: "sample-calc-cpu-purepython",
+    name: "Sample Calculation — CPU (purepython)",
+    software: "sample_calc",
+    description: "~60 s CPU run using purepython backend (portable, no dependencies)",
+    command: "python bin/sample_calc.py --backend purepython --size 128 --iters 529 --seed 42 --progress-every 50",
+    working_dir: ".",
+    gpus: 0,
+    cpus: 4,
+    memory_gb: 8,
+    vram_gb: 0,
+    input: "",
+    output: "",
+    max_retries: 0,
+    retry_delay_seconds: 0,
+    env: [],
+    builtin: true,
+  },
+  {
+    id: "sample-calc-gpu",
+    name: "Sample Calculation — GPU",
+    software: "sample_calc",
+    description: "~60 s GPU run using torch CUDA backend",
+    command: "python bin/sample_calc.py --preset gpu-1min --device cuda --seed 42 --progress-every 100",
+    working_dir: ".",
+    gpus: 1,
+    cpus: 4,
+    memory_gb: 8,
+    vram_gb: 8,
+    input: "",
+    output: "",
+    max_retries: 0,
+    retry_delay_seconds: 0,
+    env: [],
+    builtin: true,
+  },
 ];
 
 interface Stored {
@@ -293,21 +365,54 @@ export const blankProfile = (): SoftwareProfile => ({
   env: [],
 });
 
-/** Profiles hook — returns [] during SSR, then hydrates from localStorage. */
+/** Profiles hook — tries backend first, falls back to localStorage built-ins when backend is unreachable. */
 export function useProfiles() {
   const [profiles, setProfiles] = useState<SoftwareProfile[]>([]);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        // Try to fetch from backend first
+        const { httpService } = await import("@/services/http");
+        const backendProfiles = await httpService.listProfiles();
+        if (!cancelled) {
+          setProfiles(backendProfiles);
+        }
+      } catch (err) {
+        // Backend unreachable — fall back to localStorage built-ins
+        if (!cancelled) {
+          setProfiles(listProfiles());
+          console.warn("[profiles] Backend unreachable, using built-in profiles:", err);
+        }
+      } finally {
+        if (!cancelled) {
+          setReady(true);
+        }
+      }
+    }
+
+    load();
+
     const sync = () => setProfiles(listProfiles());
-    sync();
-    setReady(true);
     listeners.add(sync);
     return () => {
+      cancelled = true;
       listeners.delete(sync);
     };
   }, []);
 
-  const refresh = useCallback(() => setProfiles(listProfiles()), []);
+  const refresh = useCallback(async () => {
+    try {
+      const { httpService } = await import("@/services/http");
+      const backendProfiles = await httpService.listProfiles();
+      setProfiles(backendProfiles);
+    } catch {
+      setProfiles(listProfiles());
+    }
+  }, []);
+
   return { profiles, ready, refresh };
 }
