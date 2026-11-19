@@ -40,7 +40,7 @@ export function NodeStatusBadge({
   const stale =
     status === "ONLINE" &&
     lastHeartbeat !== undefined &&
-    Date.now() - new Date(lastHeartbeat).getTime() > 25_000;
+    Date.now() - new Date(lastHeartbeat).getTime() > 90_000;
   const label = status === "OFFLINE" ? "OFFLINE" : stale ? "DEGRADED" : "ONLINE";
   const styles =
     status === "OFFLINE"
