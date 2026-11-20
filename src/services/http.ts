@@ -108,7 +108,10 @@ export const httpService: ClusterService = {
   cancelJob: (id) => request<JobState>(`/jobs/${id}/cancel`, { method: "POST" }),
   deleteJob: (id) => request<void>(`/jobs/${id}`, { method: "DELETE" }),
 
-  getJobLogs: (id) => request<string[]>(`/jobs/${id}/logs/history`),
+  getJobLogs: async (id) => {
+    const entries = await request<Array<{ line: string }>>(`/jobs/${id}/logs/history`);
+    return entries.map((e) => e.line);
+  },
 
   streamJobLogs(
     id: string,

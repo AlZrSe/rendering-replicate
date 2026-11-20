@@ -161,7 +161,11 @@ const NODE_FIXTURE = {
   last_heartbeat: "2026-01-01T00:00:00Z",
 };
 
-const LOGS_FIXTURE = ["line one", "line two", "line three"];
+const LOGS_FIXTURE = [
+  { timestamp: "2026-01-01T00:00:00Z", line: "line one", origin: "real" },
+  { timestamp: "2026-01-01T00:00:01Z", line: "line two", origin: "real" },
+  { timestamp: "2026-01-01T00:00:02Z", line: "line three", origin: "real" },
+];
 
 const METRICS_FIXTURE = {
   job_id: "job-1",
