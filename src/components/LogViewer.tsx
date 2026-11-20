@@ -92,7 +92,20 @@ export function LogViewer({
         className="max-h-[26rem] overflow-auto bg-secondary/40 p-3 font-mono text-xs leading-relaxed"
       >
         {filtered.length === 0 ? (
-          <p className="p-6 text-center text-muted-foreground">No log lines match your filter.</p>
+          connection === "connecting" ? (
+            <p className="p-6 text-center text-muted-foreground">
+              Waiting for logs to sync from worker node…<br />
+              <span className="text-xs">Syncthing replication may take a few seconds.</span>
+            </p>
+          ) : connection === "open" ? (
+            <p className="p-6 text-center text-muted-foreground">
+              No log lines match your filter.
+            </p>
+          ) : (
+            <p className="p-6 text-center text-muted-foreground">
+              No log output captured for this job.
+            </p>
+          )
         ) : (
           filtered.map((line, i) => (
             <div key={i} className="flex gap-3 whitespace-pre-wrap">
