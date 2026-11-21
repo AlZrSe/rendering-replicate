@@ -30,7 +30,9 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
   const navigate = useNavigate();
   const [sharedToken, setSharedToken] = useState("");
-  const [apiUrl, setApiUrl] = useState(defaultSettings.apiBaseUrl || "http://localhost:8000/api/v1");
+  const [apiUrl, setApiUrl] = useState(
+    defaultSettings.apiBaseUrl || "http://localhost:8000/api/v1",
+  );
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
 

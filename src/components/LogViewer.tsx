@@ -94,13 +94,12 @@ export function LogViewer({
         {filtered.length === 0 ? (
           connection === "connecting" ? (
             <p className="p-6 text-center text-muted-foreground">
-              Waiting for logs to sync from worker node…<br />
+              Waiting for logs to sync from worker node…
+              <br />
               <span className="text-xs">Syncthing replication may take a few seconds.</span>
             </p>
           ) : connection === "open" ? (
-            <p className="p-6 text-center text-muted-foreground">
-              No log lines match your filter.
-            </p>
+            <p className="p-6 text-center text-muted-foreground">No log lines match your filter.</p>
           ) : (
             <p className="p-6 text-center text-muted-foreground">
               No log output captured for this job.

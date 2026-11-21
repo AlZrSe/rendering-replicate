@@ -20,7 +20,7 @@ export type { JobListResult, JobMetrics, JobSpec, JobState, NodeSpec } from "@/l
  */
 export interface SyncthingFolderList {
   root: string;
-  folders: string[];  // Relative paths from root
+  folders: string[]; // Relative paths from root
 }
 
 export interface JobQuery {
