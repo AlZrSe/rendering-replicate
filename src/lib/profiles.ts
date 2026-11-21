@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { ServiceError } from "@/services/types";
 
 export interface SoftwareProfile {
   id: string;
@@ -219,7 +220,8 @@ export const builtinProfiles: SoftwareProfile[] = [
     name: "Sample Calculation — CPU (purepython)",
     software: "sample_calc",
     description: "~60 s CPU run using purepython backend (portable, no dependencies)",
-    command: "python bin/sample_calc.py --backend purepython --size 128 --iters 529 --seed 42 --progress-every 50",
+    command:
+      "python bin/sample_calc.py --backend purepython --size 128 --iters 529 --seed 42 --progress-every 50",
     working_dir: ".",
     gpus: 0,
     cpus: 4,
@@ -237,7 +239,8 @@ export const builtinProfiles: SoftwareProfile[] = [
     name: "Sample Calculation — GPU",
     software: "sample_calc",
     description: "~60 s GPU run using torch CUDA backend",
-    command: "python bin/sample_calc.py --preset gpu-1min --device cuda --seed 42 --progress-every 100",
+    command:
+      "python bin/sample_calc.py --preset gpu-1min --device cuda --seed 42 --progress-every 100",
     working_dir: ".",
     gpus: 1,
     cpus: 4,
@@ -382,10 +385,14 @@ export function useProfiles() {
           setProfiles(backendProfiles);
         }
       } catch (err) {
-        // Backend unreachable — fall back to localStorage built-ins
-        if (!cancelled) {
+        // Only fall back on network failure (status 0), not on auth errors (401/403)
+        const isNetworkFailure = err instanceof ServiceError && err.status === 0;
+        if (!cancelled && isNetworkFailure) {
           setProfiles(listProfiles());
           console.warn("[profiles] Backend unreachable, using built-in profiles:", err);
+        } else if (!cancelled) {
+          // Re-throw auth/other errors so UI can handle them
+          throw err;
         }
       } finally {
         if (!cancelled) {
@@ -409,8 +416,13 @@ export function useProfiles() {
       const { httpService } = await import("@/services/http");
       const backendProfiles = await httpService.listProfiles();
       setProfiles(backendProfiles);
-    } catch {
-      setProfiles(listProfiles());
+    } catch (err) {
+      const isNetworkFailure = err instanceof ServiceError && err.status === 0;
+      if (isNetworkFailure) {
+        setProfiles(listProfiles());
+      } else {
+        throw err;
+      }
     }
   }, []);
 
