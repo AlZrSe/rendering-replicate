@@ -14,6 +14,7 @@ import type {
   Unsubscribe,
   BackendErrorResponse,
   SyncthingStatus,
+  SyncthingFolderList,
 } from "./types";
 import { ServiceError } from "./types";
 
@@ -220,11 +221,19 @@ export const mockService: ClusterService = {
         state_files: 2,
       },
       gui: {
-        host: "127.0.0.1",
+        host: "127.0.1",
         port: 8384,
         url: "http://127.0.0.1:8384",
         reachable: true,
       },
+    };
+  },
+
+  async getSyncthingFolders(): Promise<SyncthingFolderList> {
+    await delay();
+    return {
+      root: "/syncthing",
+      folders: ["data", "data/in", "data/out", "projects", "projects/my-project", "shared"],
     };
   },
 

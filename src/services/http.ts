@@ -13,6 +13,7 @@ import type {
   Unsubscribe,
   BackendErrorResponse,
   SyncthingStatus,
+  SyncthingFolderList,
 } from "./types";
 import { ServiceError } from "./types";
 
@@ -148,6 +149,7 @@ export const httpService: ClusterService = {
   getNodeMetrics: (id) => request<JobMetrics>(`/nodes/${id}/metrics`),
 
   getSyncthingStatus: () => request<SyncthingStatus>("/syncthing/status"),
+  getSyncthingFolders: () => request<SyncthingFolderList>("/syncthing/folders"),
 
   listProfiles: () => request<SoftwareProfile[]>("/profiles"),
   getProfile: (id) => request<SoftwareProfile>(`/profiles/${id}`),

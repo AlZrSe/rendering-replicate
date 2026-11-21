@@ -15,6 +15,14 @@ import type { SoftwareProfile } from "@/lib/profiles";
 // the route components. See scripts/typecheck-baseline.json.
 export type { JobListResult, JobMetrics, JobSpec, JobState, NodeSpec } from "@/lib/types";
 
+/**
+ * Syncthing folder list from the backend.
+ */
+export interface SyncthingFolderList {
+  root: string;
+  folders: string[];  // Relative paths from root
+}
+
 export interface JobQuery {
   status?: JobStatus | "ALL";
   node?: string | "ALL";
@@ -95,6 +103,7 @@ export interface ClusterService {
   getNodeMetrics(id: string): Promise<JobMetrics>;
 
   getSyncthingStatus(): Promise<SyncthingStatus>;
+  getSyncthingFolders(): Promise<SyncthingFolderList>;
 
   listProfiles(): Promise<SoftwareProfile[]>;
   getProfile(id: string): Promise<SoftwareProfile>;

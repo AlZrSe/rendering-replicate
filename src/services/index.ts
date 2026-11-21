@@ -30,6 +30,7 @@ import type {
   LogStreamStatus,
   Unsubscribe,
   SyncthingStatus,
+  SyncthingFolderList,
 } from "./types";
 
 const configured = (import.meta.env["VITE_CLUSTER_BACKEND"] ?? "").trim();
@@ -63,7 +64,13 @@ export function getClusterAsync(): ClusterService {
   return currentService;
 }
 
-export type { ClusterService, JobQuery, LogStreamStatus, Unsubscribe } from "./types";
+export type {
+  ClusterService,
+  JobQuery,
+  LogStreamStatus,
+  Unsubscribe,
+  SyncthingFolderList,
+} from "./types";
 export { ServiceError } from "./types";
 
 // Async wrapper functions that use the resolved cluster service
@@ -149,4 +156,9 @@ export async function login(sharedToken: string): Promise<void> {
 export async function logout(): Promise<void> {
   const service = getClusterAsync();
   return service.logout();
+}
+
+export async function getSyncthingFolders(): Promise<SyncthingFolderList> {
+  const service = getClusterAsync();
+  return service.getSyncthingFolders();
 }

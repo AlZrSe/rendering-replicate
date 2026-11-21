@@ -8,6 +8,7 @@ import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Shell } from "@/components/layout/Shell";
 import { YamlBlock } from "@/components/YamlBlock";
+import { FolderPicker } from "@/components/FolderPicker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -290,11 +291,21 @@ function SubmitJobPage() {
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="input">Input path</Label>
-                  <Input id="input" className="font-mono text-xs" {...form.register("input")} />
+                  <FolderPicker
+                    id="input"
+                    value={values.input || ""}
+                    onChange={(val) => form.setValue("input", val)}
+                    placeholder="Select input folder..."
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="output">Output path</Label>
-                  <Input id="output" className="font-mono text-xs" {...form.register("output")} />
+                  <FolderPicker
+                    id="output"
+                    value={values.output || ""}
+                    onChange={(val) => form.setValue("output", val)}
+                    placeholder="Select output folder..."
+                  />
                 </div>
               </div>
             </div>
